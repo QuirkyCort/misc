@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Angles Measuring Tool</title>
+  <style>
+      body {
+        font-family: sans-serif;
+      }
+      header {
+        font-size: 200%;
+        font-weight: bold;
+        text-align: center;
+      }
+      #angleBox {
+        font-size: 300%;
+        padding: 1em;
+        text-align: center;
+      }
+      #buttonsBox {
+          display: flex;
+          justify-content: space-around;
+      }
+      button {
+          font-size: 200%;
+          border-radius: 0.2em;
+      }
+      table {
+          margin-top: 1em;
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 150%;
+      }
+      tr:nth-child(odd) {
+          background: lightgray;
+      }
+      td {
+          padding: 0.5em;
+      }
+      td.right {
+          text-align: right;
+          width: 30%;
+      }
+  </style>
+</head>
+
+<body>
+  <header>Angles</header>
+
+  <main>
+    <div id="angleBox"><span id="angle">0</span>°</div>
+    <div id="buttonsBox">
+        <button id="record">Rec</button>
+        <button id="clear">Clr</button>
+        <button id="reset">Rst</button>
+        <button id="calibrate">Cal</button>
+    </div>
+    <table>
+        <tbody id="records">
+        </tbody>
+    </table>
+  </main>
+
+  <script>
+    let gyroscope = new Gyroscope({ frequency: 60 });
+    let angleDiv = document.getElementById('angle');
+    let recordBtn = document.getElementById('record');
+    let clearBtn = document.getElementById('clear');
+    let resetBtn = document.getElementById('reset');
+    let calibrateBtn = document.getElementById('calibrate')
+    let recordsTable = document.getElementById('records')
+    let angle = 0;
+    let prevTime = 0;
+    let drift = 0;
+
+    const STATIONARY_TOLERANCE = 0.1;
+    const CALIBRATION_COUNT_REQ = 150;
+    let calibrationSum = 0;
+    let calibrationCount = 0;
+    let calibrate = false;
+
+    gyroscope.addEventListener('reading', e => {
+        if (calibrate) {
+            if (gyroscope.z < STATIONARY_TOLERANCE && gyroscope.z > -STATIONARY_TOLERANCE) {
+                if (calibrationCount == CALIBRATION_COUNT_REQ) {
+                    drift = calibrationSum / CALIBRATION_COUNT_REQ;
+                    calibrate = false;
+                } else {
+                    calibrationCount++;
+                    calibrationSum += gyroscope.z
+                }
+            } else {
+                calibrationCount = 0;
+            }
+        } else if (prevTime == 0) {
+            prevTime = Date.now();
+        } else {
+            let now = Date.now();
+            let delta = now - prevTime;
+            prevTime = now;
+            angle += (gyroscope.z - drift) * delta / 1000 / Math.PI * 180;
+        }
+    });
+
+    recordBtn.addEventListener('click', function(){
+        const now = new Date();
+        const timeStr = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+        let template = document.createElement('template');
+        
+        template.innerHTML = '<tr><td>' + timeStr + '</td><td class="right">' + (Math.round(angle * 10) / 10) + '°</td></tr>';
+        recordsTable.appendChild(template.content.firstChild);
+    });
+
+    clearBtn.addEventListener('click', function(){
+        recordsTable.innerHTML = '';
+    });
+
+    resetBtn.addEventListener('click', function(){
+        angle = 0;
+    });
+
+    calibrateBtn.addEventListener('click', function(){
+        calibrate = true;
+    });
+
+    gyroscope.start();
+
+    setInterval(function(){
+        if (calibrate) {
+            angleDiv.innerText = 'CAL ';
+        } else {
+            angleDiv.innerText = Math.round(angle * 10) / -10;
+        }
+    }, 250)
+  </script>
+</body>
+</html>
