@@ -65,13 +65,14 @@
   </main>
 
   <script>
-    let gyroscope = new Gyroscope({ frequency: 60 });
     let angleDiv = document.getElementById('angle');
     let recordBtn = document.getElementById('record');
     let clearBtn = document.getElementById('clear');
     let resetBtn = document.getElementById('reset');
     let calibrateBtn = document.getElementById('calibrate')
     let recordsTable = document.getElementById('records')
+
+    let gyroscope = false;
     let angle = 0;
     let prevTime = 0;
     let drift = 0;
@@ -82,28 +83,36 @@
     let calibrationCount = 0;
     let calibrate = false;
 
-    gyroscope.addEventListener('reading', e => {
-        if (calibrate) {
-            if (gyroscope.z < STATIONARY_TOLERANCE && gyroscope.z > -STATIONARY_TOLERANCE) {
-                if (calibrationCount == CALIBRATION_COUNT_REQ) {
-                    drift = calibrationSum / CALIBRATION_COUNT_REQ;
-                    calibrate = false;
+    if (typeof Gyroscope == 'undefined') {
+        angleDiv.innerText = "Err";
+    } else {
+        gyroscope = new Gyroscope({ frequency: 60 });
+
+        gyroscope.addEventListener('reading', e => {
+            if (calibrate) {
+                if (gyroscope.z < STATIONARY_TOLERANCE && gyroscope.z > -STATIONARY_TOLERANCE) {
+                    if (calibrationCount == CALIBRATION_COUNT_REQ) {
+                        drift = calibrationSum / CALIBRATION_COUNT_REQ;
+                        calibrate = false;
+                    } else {
+                        calibrationCount++;
+                        calibrationSum += gyroscope.z
+                    }
                 } else {
-                    calibrationCount++;
-                    calibrationSum += gyroscope.z
+                    calibrationCount = 0;
                 }
+            } else if (prevTime == 0) {
+                prevTime = Date.now();
             } else {
-                calibrationCount = 0;
+                let now = Date.now();
+                let delta = now - prevTime;
+                prevTime = now;
+                angle += (gyroscope.z - drift) * delta / 1000 / Math.PI * 180;
             }
-        } else if (prevTime == 0) {
-            prevTime = Date.now();
-        } else {
-            let now = Date.now();
-            let delta = now - prevTime;
-            prevTime = now;
-            angle += (gyroscope.z - drift) * delta / 1000 / Math.PI * 180;
-        }
-    });
+        });
+
+        gyroscope.start();
+    } 
 
     recordBtn.addEventListener('click', function(){
         const now = new Date();
@@ -126,10 +135,10 @@
         calibrate = true;
     });
 
-    gyroscope.start();
-
     setInterval(function(){
-        if (calibrate) {
+        if (gyroscope == false) {
+            return;
+        } else if (calibrate) {
             angleDiv.innerText = 'CAL ';
         } else {
             angleDiv.innerText = Math.round(angle * 10) / -10;
