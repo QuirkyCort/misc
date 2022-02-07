@@ -110,7 +110,7 @@
         const timeStr = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
         let template = document.createElement('template');
         
-        template.innerHTML = '<tr><td>' + timeStr + '</td><td class="right">' + (Math.round(angle * 10) / 10) + '°</td></tr>';
+        template.innerHTML = '<tr><td>' + timeStr + '</td><td class="right">' + (Math.round(angle * 10) / -10) + '°</td></tr>';
         recordsTable.appendChild(template.content.firstChild);
     });
 
