@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Laser Cutting Time Estimator</title>
+  <style>
+  </style>
+</head>
+
+<body>
+  <header>Laser Cutting Time Estimator</header>
+
+  <main>
+    <p>Select your file</p>
+    <p>Cutting speed: <input type="text" id="speed" value="400"> mm/min</p>
+    <p>Units per mm: <input type="text" id="pixelPerMm" value="3.77952756"> (default based on 96 dpi)</p>
+    <input type="file" id="svgFile" accept=".svg">
+    <p>Duration: <span id="result">???</span> mins</p>
+    <div id="preview"></div>
+  </main>
+
+  <script>
+    let svgFile = document.getElementById('svgFile');
+    let result = document.getElementById('result');
+    let preview = document.getElementById('preview');
+    let speed = document.getElementById('speed');
+    let pixelPerMm = document.getElementById('pixelPerMm');
+
+    svgFile.addEventListener('change', loadAndCalc);
+
+    async function loadAndCalc() {
+        await loadPreview();
+        stripText(preview.children[0]);
+        calcDuration();
+    }
+
+    function calcDuration() {
+        let totalLength = 0;
+
+        function addLength(ele) {
+            if (ele.getTotalLength) {
+                totalLength += ele.getTotalLength();
+            }
+            if (ele.children) {
+                for (let child of ele.children) {
+                    addLength(child);
+                }
+            }
+        }
+
+        addLength(preview.children[0]);
+
+        console.log('Length (px)', totalLength);
+
+        let mmLength = totalLength / parseFloat(pixelPerMm.value);
+
+        console.log('Length (mm) ', mmLength);
+
+        result.innerText = Math.round(mmLength / parseFloat(speed.value) * 10) / 10;
+    }
+
+    function stripText(ele) {
+        if (ele instanceof SVGTextElement) {
+            ele.remove();
+        }
+        if (ele.children) {
+            for (let child of ele.children) {
+                stripText(child);
+            }
+        }
+    }
+
+    async function loadPreview() {
+        const curFiles = svgFile.files;
+        if (curFiles.length === 0) {
+            console.log('No files selected');
+            return;
+        }
+
+        let result = await curFiles[0].text();
+        preview.innerHTML = result;
+    }
+  </script>
+</body>
+</html>
