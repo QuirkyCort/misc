@@ -19,6 +19,7 @@
     <p>Units per mm: <input type="text" id="pixelPerMm" value="3.77952756"> (default based on 96 dpi)</p>
     <input type="file" id="svgFile" accept=".svg">
     <p>Duration: <span id="result">???</span> mins</p>
+    <p id="warning" style="color: red"></p>
     <div id="preview"></div>
   </main>
 
@@ -28,10 +29,12 @@
     let preview = document.getElementById('preview');
     let speed = document.getElementById('speed');
     let pixelPerMm = document.getElementById('pixelPerMm');
+    let warning = document.getElementById('warning');
 
     svgFile.addEventListener('change', loadAndCalc);
 
     async function loadAndCalc() {
+        warning.innerHTML = '';
         await loadPreview();
         stripText(preview.children[0]);
         calcDuration();
@@ -64,6 +67,7 @@
 
     function stripText(ele) {
         if (ele instanceof SVGTextElement) {
+            warning.innerHTML += 'WARNING: Text removed. Text must be converted to Outline Text to be compatible.<br>'
             ele.remove();
         }
         if (ele.children) {
