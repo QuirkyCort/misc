@@ -18,7 +18,7 @@
   <main>
     <p>Cutting speed: <input type="text" id="speed" value="400"> mm/min</p>
     <p>Units per mm: <input type="text" id="pixelPerMm" value="3.77952756"> (default based on 96 dpi)</p>
-    <input type="file" id="svgFile" accept=".svg">
+    <input type="file" id="svgFile" accept=".svg"> <button id="recalc">Recalculate</button>
     <p>Duration: <span id="result">???</span> mins</p>
     <p id="warning" style="color: red"></p>
     <div id="preview"></div>
@@ -26,18 +26,31 @@
 
   <script>
     let svgFile = document.getElementById('svgFile');
+    let recalc = document.getElementById('recalc');
     let result = document.getElementById('result');
     let preview = document.getElementById('preview');
     let speed = document.getElementById('speed');
     let pixelPerMm = document.getElementById('pixelPerMm');
     let warning = document.getElementById('warning');
+    let svgEle;
+    let unitsPerMm;
 
     svgFile.addEventListener('change', loadAndCalc);
+    recalc.addEventListener('click', loadAndCalc);
 
     async function loadAndCalc() {
         warning.innerHTML = '';
+
         await loadPreview();
-        stripText(preview.children[0]);
+        svgEle = preview.children[0];
+        unitsPerMm = (pixelPerMm.value);
+        // if (svgEle.getAttribute('width').includes('mm')) {
+        //     unitsPerMm = 1;
+        // }
+
+        stripText(svgEle);
+        removeFill(svgEle);
+        setStroke(svgEle);
         calcDuration();
     }
 
@@ -48,6 +61,7 @@
             if (ele.getTotalLength) {
                 totalLength += ele.getTotalLength();
             }
+
             if (ele.children) {
                 for (let child of ele.children) {
                     addLength(child);
@@ -55,11 +69,11 @@
             }
         }
 
-        addLength(preview.children[0]);
+        addLength(svgEle);
 
-        console.log('Length (px)', totalLength);
+        console.log('Length (user units)', totalLength);
 
-        let mmLength = totalLength / parseFloat(pixelPerMm.value);
+        let mmLength = totalLength / unitsPerMm;
 
         console.log('Length (mm) ', mmLength);
 
@@ -74,6 +88,35 @@
         if (ele.children) {
             for (let child of ele.children) {
                 stripText(child);
+            }
+        }
+    }
+
+    function removeFill(ele) {
+        if (ele.style) {
+            if (ele.style.fill) {
+                ele.style.fill = 'none';
+            }
+        }
+        if (ele.children) {
+            for (let child of ele.children) {
+                removeFill(child);
+            }
+        }
+    }
+
+    function setStroke(ele) {
+        if (ele.style) {
+            if (ele.style.strokeWidth) {
+                ele.style.strokeWidth = 0.2 * unitsPerMm;
+            }
+            if (ele.style.stroke) {
+                ele.style.stroke = 'rgb(0, 0, 0)';
+            }
+        }
+        if (ele.children) {
+            for (let child of ele.children) {
+                setStroke(child);
             }
         }
     }
