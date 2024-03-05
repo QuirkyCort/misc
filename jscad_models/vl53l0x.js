@@ -9,7 +9,7 @@ const { cylinder, cuboid } = jscad.primitives
 
 const getParameterDefinitions = () => {
     return [
-        { name: 'height', type: 'float', initial: 10, caption: 'Height of mouting holes from base' },
+        { name: 'height', type: 'float', initial: 15, caption: 'Height of mouting holes from base' },
         { name: 'width', type: 'float', initial: 6, step: 0.5, caption: 'Width of mount points' },
         { name: 'm3', type: 'float', initial: 2.8, caption: 'Diameter of M3 holes' },
         { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
