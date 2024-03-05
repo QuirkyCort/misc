@@ -3,17 +3,17 @@
  */
 
 const jscad = require('@jscad/modeling')
-const { union, intersect, scission, subtract } = require('@jscad/modeling').booleans
+const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid } = jscad.primitives
 
 const getParameterDefinitions = () => {
     return [
-        { name: 'height', type: 'float', initial: 10, caption: 'Height of mount points' },
-        { name: 'diameter', type: 'float', initial: 6, caption: 'Diameter of mount points' },
-        { name: 'm3', type: 'float', initial: 3, caption: 'Diameter of M3 holes' },
-        { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
-        { name: 'legoOuterDia', type: 'float', initial: 6.2, caption: 'Lego: Outer diameter of hole' },
-        { name: 'legoHeight', type: 'float', initial: 0.8, caption: 'Lego: Height of outer diameter' },
+        { name: 'height', type: 'float', initial: 18, caption: 'Overall height' },
+        { name: 'diameter', type: 'float', initial: 6, step: 0.5, caption: 'Diameter of mount points' },
+        { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
+        { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
+        { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
+        { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
     ]
 }
 
@@ -47,35 +47,35 @@ const main = (params) => {
   const solids = [];
   const holes = [];
 
-  const height = params.height;
+  const height = params.height - 8;
   const diameter = params.diameter;
   const m3 = params.m3;
 
-  // Mounting points for GY-33
-  solids.push(cylinder({radius: diameter/2, height: height, center: [9, 10, height/2], segments: 64}))
-  solids.push(cylinder({radius: diameter/2, height: height, center: [-9, 10, height/2], segments: 64}))
-  solids.push(cylinder({radius: diameter/2, height: height, center: [9, -10, height/2], segments: 64}))
-  solids.push(cylinder({radius: diameter/2, height: height, center: [-9, -10, height/2], segments: 64}))
+  // Mounting points for sensor
+  solids.push(cylinder({radius: diameter/2, height: height, center: [10, 9, height/2], segments: 64}))
+  solids.push(cylinder({radius: diameter/2, height: height, center: [-10, 9, height/2], segments: 64}))
+  solids.push(cylinder({radius: diameter/2, height: height, center: [10, -9, height/2], segments: 64}))
+  solids.push(cylinder({radius: diameter/2, height: height, center: [-10, -9, height/2], segments: 64}))
 
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [9, 10, height/2], segments: 64}))
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-9, 10, height/2], segments: 64}))
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [9, -10, height/2], segments: 64}))
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-9, -10, height/2], segments: 64}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [10, 9, height/2], segments: 64}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-10, 9, height/2], segments: 64}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [10, -9, height/2], segments: 64}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-10, -9, height/2], segments: 64}))
 
-  // Beams for mounting to Lego
-  solids.push(cuboid({size: [40, 8, 8], center: [0, 10, -4]}))
-  solids.push(cuboid({size: [40, 8, 8], center: [0, -10, -4]}))
+  // Base
+  solids.push(cuboid({size: [40, 8, 8], center: [0, 8, -4]}))
+  solids.push(cuboid({size: [40, 8, 8], center: [0, -8, -4]}))
   solids.push(cuboid({size: [8, 14, 8], center: [-8, 0, -4]}))
   solids.push(cuboid({size: [8, 14, 8], center: [8, 0, -4]}))
 
-  holes.push(legoHole(0, 10, -4, params))
-  holes.push(legoHole(0, -10, -4, params))
+  holes.push(legoHole(0, 8, -4, params))
+  holes.push(legoHole(0, -8, -4, params))
   holes.push(legoHole(-8, 0, -4, params))
   holes.push(legoHole(8, 0, -4, params))
-  holes.push(legoHole(16, 10, -4, params))
-  holes.push(legoHole(-16, 10, -4, params))
-  holes.push(legoHole(16, -10, -4, params))
-  holes.push(legoHole(-16, -10, -4, params))
+  holes.push(legoHole(16, 8, -4, params))
+  holes.push(legoHole(-16, 8, -4, params))
+  holes.push(legoHole(16, -8, -4, params))
+  holes.push(legoHole(-16, -8, -4, params))
 
   return merge(solids, holes);
 }
