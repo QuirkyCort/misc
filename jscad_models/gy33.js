@@ -7,14 +7,15 @@ const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid } = jscad.primitives
 
 const getParameterDefinitions = () => {
-    return [
-        { name: 'height', type: 'float', initial: 18, caption: 'Overall height' },
-        { name: 'diameter', type: 'float', initial: 6, step: 0.5, caption: 'Diameter of mount points' },
-        { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
-        { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
-        { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
-        { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
-    ]
+  return [
+    { name: 'height', type: 'float', initial: 18, caption: 'Overall height' },
+    { name: 'diameter', type: 'float', initial: 6, step: 0.5, caption: 'Diameter of mount points' },
+    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
+    { name: 'smaller', type: 'checkbox', checked: false, caption: 'Smaller base' },
+    { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
+    { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
+    { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
+  ]
 }
 
 const legoHole = (x, y, z, params) => {
@@ -50,6 +51,7 @@ const main = (params) => {
   const height = params.height - 8;
   const diameter = params.diameter;
   const m3 = params.m3;
+  const smaller = params.smaller;
 
   // Mounting points for sensor
   solids.push(cylinder({radius: diameter/2, height: height, center: [10, 9, height/2], segments: 64}))
@@ -63,8 +65,13 @@ const main = (params) => {
   holes.push(cylinder({radius: m3/2, height: height + 16, center: [-10, -9, height/2], segments: 64}))
 
   // Base
-  solids.push(cuboid({size: [40, 8, 8], center: [0, 8, -4]}))
-  solids.push(cuboid({size: [40, 8, 8], center: [0, -8, -4]}))
+  let baseWidth = 40;
+  if (smaller) {
+    baseWidth = 20 + diameter;
+  }
+  solids.push(cuboid({size: [baseWidth, 8, 8], center: [0, 8, -4]}))
+  solids.push(cuboid({size: [baseWidth, 8, 8], center: [0, -8, -4]}))
+
   solids.push(cuboid({size: [8, 14, 8], center: [-8, 0, -4]}))
   solids.push(cuboid({size: [8, 14, 8], center: [8, 0, -4]}))
 
@@ -72,12 +79,15 @@ const main = (params) => {
   holes.push(legoHole(0, -8, -4, params))
   holes.push(legoHole(-8, 0, -4, params))
   holes.push(legoHole(8, 0, -4, params))
-  holes.push(legoHole(16, 8, -4, params))
-  holes.push(legoHole(-16, 8, -4, params))
-  holes.push(legoHole(16, -8, -4, params))
-  holes.push(legoHole(-16, -8, -4, params))
+  if (!smaller) {
+    holes.push(legoHole(16, 8, -4, params))
+    holes.push(legoHole(-16, 8, -4, params))
+    holes.push(legoHole(16, -8, -4, params))
+    holes.push(legoHole(-16, -8, -4, params))
+  }
 
   return merge(solids, holes);
 }
 
 module.exports = { getParameterDefinitions, main }
+

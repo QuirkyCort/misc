@@ -7,12 +7,13 @@ const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid } = jscad.primitives
 
 const getParameterDefinitions = () => {
-    return [
-        { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
-        { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
-        { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
-        { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
-    ]
+  return [
+    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
+    { name: 'bigger', type: 'checkbox', checked: false, caption: 'Bigger base' },
+    { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
+    { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
+    { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
+  ]
 }
 
 const legoHole = (x, y, z, params) => {
@@ -46,6 +47,7 @@ const main = (params) => {
   const holes = [];
 
   const m3 = params.m3;
+  const bigger = params.bigger;
 
   // Mounting points for sensor
   solids.push(cuboid({size: [6, 8, 3], center: [7.78, 0, 1.5]}))
@@ -55,12 +57,22 @@ const main = (params) => {
   holes.push(cylinder({radius: m3/2, height: 3, center: [-7.78, -1, 1.5], segments: 64}))
 
   // Base
-  solids.push(cuboid({size: [24, 16, 8], center: [0, 4, -4]}))
+  if (bigger) {
+    solids.push(cuboid({size: [24, 24, 8], center: [0, 8, -4]}))
+  } else {
+    solids.push(cuboid({size: [24, 16, 8], center: [0, 4, -4]}))
+  }
 
   holes.push(legoHole(0, 0, -4, params))
   holes.push(legoHole(0, 8, -4, params))
   holes.push(legoHole(-8, 8, -4, params))
   holes.push(legoHole(8, 8, -4, params))
+
+  if (bigger) {
+    holes.push(legoHole(0, 16, -4, params))
+    holes.push(legoHole(-8, 16, -4, params))
+    holes.push(legoHole(8, 16, -4, params))
+  }
 
   return merge(solids, holes);
 }
