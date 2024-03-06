@@ -2,6 +2,8 @@
  * Adapter for GY-33
  */
 
+localStorage.setItem('jscad:jscad1-design','{}')
+
 const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid } = jscad.primitives

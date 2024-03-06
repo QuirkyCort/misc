@@ -2,6 +2,8 @@
  * Adapter for GY-521 (MPU-6050)
  */
 
+localStorage.setItem('jscad:jscad1-design','{}')
+
 const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid } = jscad.primitives

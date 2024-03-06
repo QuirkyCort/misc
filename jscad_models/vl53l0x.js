@@ -2,6 +2,8 @@
  * Adapter for VL53L0X
  */
 
+localStorage.setItem('jscad:jscad1-design','{}')
+
 const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
 const { rotateX, translate } = require('@jscad/modeling').transforms
