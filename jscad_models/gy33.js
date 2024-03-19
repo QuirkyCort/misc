@@ -23,9 +23,9 @@ const legoHole = (x, y, z, params) => {
   const outer = params.legoOuterDia
   const height = params.legoHeight
 
-  const center = cylinder({radius: inner/2, height: 8, center: [x, y, z], segments: 64})
-  const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 64})
-  const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 64})
+  const center = cylinder({radius: inner/2, height: 8, center: [x, y, z], segments: 32})
+  const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 32})
+  const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
 
   return union(center, union(top, bottom));
 }
@@ -54,15 +54,15 @@ const main = (params) => {
   const smaller = params.smaller;
 
   // Mounting points for sensor
-  solids.push(cylinder({radius: diameter/2, height: height, center: [10, 9, height/2], segments: 64}))
-  solids.push(cylinder({radius: diameter/2, height: height, center: [-10, 9, height/2], segments: 64}))
-  solids.push(cylinder({radius: diameter/2, height: height, center: [10, -9, height/2], segments: 64}))
-  solids.push(cylinder({radius: diameter/2, height: height, center: [-10, -9, height/2], segments: 64}))
+  solids.push(cylinder({radius: diameter/2, height: height, center: [10, 9, height/2], segments: 32}))
+  solids.push(cylinder({radius: diameter/2, height: height, center: [-10, 9, height/2], segments: 32}))
+  solids.push(cylinder({radius: diameter/2, height: height, center: [10, -9, height/2], segments: 32}))
+  solids.push(cylinder({radius: diameter/2, height: height, center: [-10, -9, height/2], segments: 32}))
 
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [10, 9, height/2], segments: 64}))
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-10, 9, height/2], segments: 64}))
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [10, -9, height/2], segments: 64}))
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-10, -9, height/2], segments: 64}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [10, 9, height/2], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-10, 9, height/2], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [10, -9, height/2], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-10, -9, height/2], segments: 32}))
 
   // Base
   let baseWidth = 40;

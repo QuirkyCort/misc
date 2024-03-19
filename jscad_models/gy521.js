@@ -53,8 +53,8 @@ const main = (params) => {
   solids.push(cuboid({size: [6, 8, 3], center: [7.78, 0, 1.5]}))
   solids.push(cuboid({size: [6, 8, 3], center: [-7.78, 0, 1.5]}))
 
-  holes.push(cylinder({radius: m3/2, height: 3, center: [7.78, -1, 1.5], segments: 64}))
-  holes.push(cylinder({radius: m3/2, height: 3, center: [-7.78, -1, 1.5], segments: 64}))
+  holes.push(cylinder({radius: m3/2, height: 3, center: [7.78, -1, 1.5], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: 3, center: [-7.78, -1, 1.5], segments: 32}))
 
   // Base
   if (bigger) {
