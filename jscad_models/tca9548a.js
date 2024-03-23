@@ -62,11 +62,12 @@ const main = (params) => {
   holes.push(cylinder({radius: m3/2, height: height + 16, center: [-MOUNTING_LENGTH/2, 0, height/2], segments: 32}))
 
   // Base
-  let baseWidth = MOUNTING_LENGTH + diameter;
-  solids.push(cuboid({size: [baseWidth, 8, 8], center: [0, 0, -4]}))
+  let baseWidth = MOUNTING_LENGTH;
+  solids.push(cuboid({size: [baseWidth, diameter, 8], center: [0, 0, -4]}))
+  solids.push(cylinder({radius: diameter/2, height: 8, center: [MOUNTING_LENGTH/2, 0, -4], segments: 32}))
+  solids.push(cylinder({radius: diameter/2, height: 8, center: [-MOUNTING_LENGTH/2, 0, -4], segments: 32}))
 
-  solids.push(cuboid({size: [24, 8, 8], center: [0, 8, -4]}))
-  solids.push(cuboid({size: [24, 8, 8], center: [0, -8, -4]}))
+  solids.push(cuboid({size: [24, 24, 8], center: [0, 0, -4]}))
 
   holes.push(legoHole(0, 8, -4, params))
   holes.push(legoHole(-8, 8, -4, params))
