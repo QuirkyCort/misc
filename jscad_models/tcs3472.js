@@ -59,8 +59,8 @@ const main = (params) => {
   solids.push(cylinder({radius: 3, height: height, center: [MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
   solids.push(cylinder({radius: 3, height: height, center: [-MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
 
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [MOUNTING_LENGTH/2, 0, height/2], segments: 32}))
-  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-MOUNTING_LENGTH/2, 0, height/2], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: height, center: [MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: height, center: [-MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
 
   // Base
   if (bigger) {
