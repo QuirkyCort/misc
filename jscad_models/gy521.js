@@ -1,5 +1,5 @@
 /**
- * Adapter for GY-521 (MPU-6050)
+ * Adapter for GY-521 (MPU-6050) and MPU-9250
  */
 
 const jscad = require('@jscad/modeling')

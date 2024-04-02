@@ -1,5 +1,5 @@
 /**
- * Adapter for TCA9548A
+ * Adapter for TCS3472
  */
 
 const jscad = require('@jscad/modeling')
@@ -17,7 +17,7 @@ const getParameterDefinitions = () => {
   ]
 }
 
-const MOUNTING_LENGTH = 25.4;
+const MOUNTING_LENGTH = 25.87;
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -54,11 +54,13 @@ const main = (params) => {
   const bigger = params.bigger;
 
   // Mounting points for sensor
-  solids.push(cuboid({size: [6, 10, height], center: [MOUNTING_LENGTH/2, 0, -height/2+4]}))
-  solids.push(cuboid({size: [6, 10, height], center: [-MOUNTING_LENGTH/2, 0, -height/2+4]}))
+  solids.push(cuboid({size: [MOUNTING_LENGTH, 6, 8], center: [0, 0, -4]}))
 
-  holes.push(cylinder({radius: m3/2, height: height, center: [MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
-  holes.push(cylinder({radius: m3/2, height: height, center: [-MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
+  solids.push(cylinder({radius: 3, height: height, center: [MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
+  solids.push(cylinder({radius: 3, height: height, center: [-MOUNTING_LENGTH/2, 0, -height/2+4], segments: 32}))
+
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [MOUNTING_LENGTH/2, 0, height/2], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: height + 16, center: [-MOUNTING_LENGTH/2, 0, height/2], segments: 32}))
 
   // Base
   if (bigger) {
@@ -74,7 +76,7 @@ const main = (params) => {
 
     holes.push(legoHole(0, 0, -4, params))
   } else {
-    solids.push(cuboid({size: [24, 16, 8], center: [0, 0, -4]}))
+    solids.push(cuboid({size: [16, 16, 8], center: [0, 0, -4]}))
 
     holes.push(legoHole(-4, -4, -4, params))
     holes.push(legoHole(-4, 4, -4, params))
