@@ -16,7 +16,7 @@ const getParameterDefinitions = () => {
   ]
 }
 
-const MOUNTING_LENGTH = 8.3;
+const MOUNTING_LENGTH = 8.5;
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia

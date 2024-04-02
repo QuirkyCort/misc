@@ -8,6 +8,7 @@ const { cylinder, cuboid } = jscad.primitives
 
 const getParameterDefinitions = () => {
   return [
+    { name: 'type', type: 'choice', caption: 'Sensor Type', values: ['gy521', 'mpu9250'], captions: ['GY-521', 'MPU-9250'], initial: 0 },
     { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
     { name: 'bigger', type: 'checkbox', checked: false, caption: 'Bigger base' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
@@ -15,6 +16,9 @@ const getParameterDefinitions = () => {
     { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
   ]
 }
+
+const MOUNTING_LENGTH_GY521 = 15.56;
+const MOUNTING_LENGTH_9250 = 20.26;
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -46,15 +50,23 @@ const main = (params) => {
   const solids = [];
   const holes = [];
 
+  const type = params.type;
   const m3 = params.m3;
   const bigger = params.bigger;
 
-  // Mounting points for sensor
-  solids.push(cuboid({size: [6, 8, 3], center: [7.78, 0, 1.5]}))
-  solids.push(cuboid({size: [6, 8, 3], center: [-7.78, 0, 1.5]}))
+  let mounting_length;
+  if (type == 'mpu9250') {
+    mounting_length = MOUNTING_LENGTH_9250;
+  } else {
+    mounting_length = MOUNTING_LENGTH_GY521;
+  }
 
-  holes.push(cylinder({radius: m3/2, height: 3, center: [7.78, -1, 1.5], segments: 32}))
-  holes.push(cylinder({radius: m3/2, height: 3, center: [-7.78, -1, 1.5], segments: 32}))
+  // Mounting points for sensor
+  solids.push(cuboid({size: [6, 8, 11], center: [mounting_length/2, 0, -2.5]}))
+  solids.push(cuboid({size: [6, 8, 11], center: [-mounting_length/2, 0, -2.5]}))
+
+  holes.push(cylinder({radius: m3/2, height: 11, center: [mounting_length/2, -1, -2.5], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: 11, center: [-mounting_length/2, -1, -2.5], segments: 32}))
 
   // Base
   if (bigger) {
