@@ -123,7 +123,7 @@ const readFile = (url, onerror, onsucess) => {
 
 const readProxy = (url, onerror, onsucess) => {
 
-  onsuccess(data);
+  onsucess(data);
   // const proxyurl = proxyUrl + url
 
   // fetch(proxyurl)
