@@ -53,17 +53,16 @@ const makeHttpSideEffect = (params) => {
           const onProxy = (proxy) => {
             if (proxy.file) {
               // create a relative URL to the file
-              // const baseUrl = new URL(origin)
-              // const newUrl = new URL(proxy.file, baseUrl)
-              // readFile(newUrl.toString(), onError, onSuccess)
-              readFile(url, onError, onSuccess)
+              const baseUrl = new URL(origin)
+              const newUrl = new URL(proxy.file, baseUrl)
+              readFile(newUrl.toString(), onError, onSuccess)
             }
           }
-          if (proxy) {
-            readProxy(url, onError, onProxy)
-          } else {
+          // if (proxy) {
+          //   readProxy(url, onError, onProxy)
+          // } else {
             readFile(url, onError, onSuccess)
-          }
+          // }
         })
       }
 
@@ -122,24 +121,22 @@ const readFile = (url, onerror, onsucess) => {
 }
 
 const readProxy = (url, onerror, onsucess) => {
+  const proxyurl = proxyUrl + url
 
-  onsucess(data);
-  // const proxyurl = proxyUrl + url
-
-  // fetch(proxyurl)
-  //   .then((response) => {
-  //     if (response.ok) {
-  //       return response.json()
-  //     } else {
-  //       onerror(new Error(`fetch error: ${response.status} ${response.statusText}`))
-  //     }
-  //   })
-  //   .then((data) => {
-  //     onsucess(data)
-  //   })
-  //   .catch((error) => {
-  //     onerror(error)
-  //   })
+  fetch(proxyurl)
+    .then((response) => {
+      if (response.ok) {
+        return response.json()
+      } else {
+        onerror(new Error(`fetch error: ${response.status} ${response.statusText}`))
+      }
+    })
+    .then((data) => {
+      onsucess(data)
+    })
+    .catch((error) => {
+      onerror(error)
+    })
 }
 
 module.exports = makeHttpSideEffect
