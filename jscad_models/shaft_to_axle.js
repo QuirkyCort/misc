@@ -1,5 +1,5 @@
 /**
- * Adapter for d_shaft_to_axle
+ * Adapter for shaft to lego axle
  */
 
 const jscad = require('@jscad/modeling')
@@ -84,13 +84,13 @@ const main = (params) => {
   const d_depth = params.d_depth;
   const shaft_depth = params.shaft_depth;
   const lego_depth = params.lego_depth;
-  const m3_hole = params.m3_hole;
+  const m3 = params.m3;
 
   // Main body and hole for d shaft
   let height = shaft_depth + lego_depth;
   solids.push(cylinder({radius: diameter/2, height: height, center: [0, 0, height/2], segments: 32}))
   holes.push(translate([0, 0, shaft_depth/2], d_shaft(shaft_diameter, d_depth, shaft_depth)))
-  holes.push(translate([0, diameter/4, shaft_depth/2], rotateX(Math.PI/2, cylinder({radius: m3_hole/2, height: diameter/2, segments: 32}))))
+  holes.push(translate([0, diameter/4, shaft_depth/2], rotateX(Math.PI/2, cylinder({radius: m3/2, height: diameter/2, segments: 32}))))
 
   // Hole for axle
   holes.push(legoAxle(0, 0, shaft_depth+lego_depth/2, lego_depth, params))
