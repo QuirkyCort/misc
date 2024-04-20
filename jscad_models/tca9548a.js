@@ -74,7 +74,8 @@ const main = (params) => {
 
     holes.push(legoHole(0, 0, -4, params))
   } else {
-    solids.push(cuboid({size: [24, 16, 8], center: [0, 0, -4]}))
+    solids.push(cuboid({size: [16, 16, 8], center: [0, 0, -4]}))
+    solids.push(cuboid({size: [24, 10, 8], center: [0, 0, -4]}))
 
     holes.push(legoHole(-4, -4, -4, params))
     holes.push(legoHole(-4, 4, -4, params))
