@@ -55,14 +55,16 @@ const main = (params) => {
   solids.push(cuboid({size: [6, 8, 3], center: [MOUNTING_LENGTH/2, 0, 1.5]}))
   solids.push(cuboid({size: [6, 8, 3], center: [-MOUNTING_LENGTH/2, 0, 1.5]}))
 
-  holes.push(cylinder({radius: m3/2, height: 3, center: [MOUNTING_LENGTH/2, -1, 1.5], segments: 32}))
-  holes.push(cylinder({radius: m3/2, height: 3, center: [-MOUNTING_LENGTH/2, -1, 1.5], segments: 32}))
+  solids.push(cuboid({size: [MOUNTING_LENGTH+6, 8, 8], center: [0, 0, -4]}))
+
+  holes.push(cylinder({radius: m3/2, height: 11, center: [MOUNTING_LENGTH/2, -1, -2.5], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: 11, center: [-MOUNTING_LENGTH/2, -1, -2.5], segments: 32}))
 
   // Base
   if (bigger) {
-    solids.push(cuboid({size: [24, 24, 8], center: [0, 8, -4]}))
+    solids.push(cuboid({size: [24, 16, 8], center: [0, 12, -4]}))
   } else {
-    solids.push(cuboid({size: [16, 24, 8], center: [0, 8, -4]}))
+    solids.push(cuboid({size: [16, 16, 8], center: [0, 12, -4]}))
   }
 
 
