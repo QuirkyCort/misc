@@ -11,10 +11,10 @@ const getParameterDefinitions = () => {
   return [
     { name: 'diameter', type: 'float', initial: 9, caption: 'Outer diameter' },
     { name: 'shaft_diameter', type: 'float', initial: 5, caption: 'Shaft diameter' },
-    { name: 'd_depth', type: 'float', initial: 0.5, caption: 'Depth of flat surface on shaft' },
+    { name: 'd_depth', type: 'float', initial: 0.5, caption: 'Depth of flat surface on shaft (set to 0 if shaft does not have a flat)' },
     { name: 'shaft_depth', type: 'float', initial: 16, caption: 'Depth of shaft hole' },
     { name: 'lego_depth', type: 'float', initial: 16, caption: 'Depth of lego shaft' },
-    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Hole for M3 screw' },
+    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Hole for M3 screw (set to 0 if not needed)' },
     { name: 'legoAxleLength', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Axle Length' },
     { name: 'legoAxleWidth', type: 'float', initial: 1.8, step: 0.1, caption: 'Lego: Axle Width' },
     { name: 'legoAxleChamfer', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Inner Chamfer Size' },
