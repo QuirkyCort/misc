@@ -11,7 +11,7 @@ const getParameterDefinitions = () => {
     { name: 'height', type: 'float', initial: 12, caption: 'Overall height' },
     { name: 'diameter', type: 'float', initial: 12, caption: 'Inner diameter' },
     { name: 'wall_thickness', type: 'float', initial: 1.5, step: 0.1, caption: 'Wall Thickness' },
-    { name: 'm3_hole', type: 'float', initial: 3.2, step: 0.1, caption: 'Hole for M3 screw' },
+    { name: 'm3_hole', type: 'float', initial: 3.2, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
   ]
 }
 
