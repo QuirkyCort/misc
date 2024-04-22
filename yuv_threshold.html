@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>YUV Threshold Visualizer</title>
+  <style>
+    input[type=range] {
+        width: 20em;
+    }
+    td {
+        width: 25em;
+    }
+    #min_color, #max_color {
+        height: 1em;
+        width: 20em;
+    }
+    #threshold_overlay {
+        position: relative;
+        left: -160px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>YUV Threshold Visualizer</h1>
+  </header>
+
+  <main>
+    <canvas id="image" width="160" height="120"></canvas>
+    <canvas id="threshold" width="160" height="120"></canvas><canvas id="threshold_overlay" width="160" height="120"></canvas>
+    <table>
+        <tr>
+            <td>RGB: <span id="selected_rgb">Click on image to display</span></td>
+        </tr>
+        <tr>
+            <td>YUV: <span id="selected_yuv">Click on image to display</span></td>
+        </tr>
+        <tr>
+            <td>Width:<input id="width" type="number" value="160" step="1"></td>
+            <td>You must set the width and height correctly before loading the YUV file.</td>
+        </tr>
+        <tr>
+            <td>Height:<input id="height" type="number" value="120" step="1"></td>
+            <td><input id="file" type="file"></td>
+        </tr>
+        <tr>
+            <td>Y Min:<input id="y_min" type="range" min="0" max="255" value="0" step="1"><span id="y_min_val">0</span></td>
+            <td>Y Max:<input id="y_max" type="range" min="0" max="255" value="255" step="1"><span id="y_max_val">255</span></td>
+        </tr>
+        <tr>
+            <td>U Min:<input id="u_min" type="range" min="0" max="255" value="0" step="1"><span id="u_min_val">0</span></td>
+            <td>U Max:<input id="u_max" type="range" min="0" max="255" value="255" step="1"><span id="u_max_val">255</span></td>
+        </tr>
+        <tr>
+            <td>V Min:<input id="v_min" type="range" min="0" max="255" value="0" step="1"><span id="v_min_val">0</span></td>
+            <td>V Max:<input id="v_max" type="range" min="0" max="255" value="255" step="1"><span id="v_max_val">255</span></td>
+        </tr>
+    </table>
+    <canvas id="yuv_min_plane" width="256" height="256"></canvas>
+    <canvas id="yuv_max_plane" width="256" height="256"></canvas>
+  </main>
+
+  <script>
+    let yuv;
+
+    function drawThreshold() {
+        let width = parseInt(document.getElementById('width').value);
+        let height = parseInt(document.getElementById('height').value);
+        let yMin = parseInt(document.getElementById('y_min').value);
+        let yMax = parseInt(document.getElementById('y_max').value);
+        let uMin = parseInt(document.getElementById('u_min').value);
+        let uMax = parseInt(document.getElementById('u_max').value);
+        let vMin = parseInt(document.getElementById('v_min').value);
+        let vMax = parseInt(document.getElementById('v_max').value);
+        let imageCanvas = document.getElementById('threshold');
+        let ctx = imageCanvas.getContext('2d');
+
+        if (! yuv) {
+            return
+        }
+
+        const imageData = ctx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+        const data = imageData.data;
+        for (let y=0; y<height; y++) {
+            for (let x=0; x<width; x+=2) {
+                let pos = (y * width + x);
+                let yuv_pos = pos * 2 ;
+                let canvas_pos = pos * 4;
+
+                let y1 = yuv[yuv_pos];
+                let u = yuv[yuv_pos + 1];
+                let y2 = yuv[yuv_pos + 2];
+                let v = yuv[yuv_pos + 3];
+
+                let value = 0;
+                if (yMin <= y1 && y1 <= yMax && uMin <= u && u <= uMax && vMin <= v && v <= vMax) {
+                    value = 255;
+                }
+                data[canvas_pos] = value;
+                data[canvas_pos + 1] = value;
+                data[canvas_pos + 2] = value;
+                data[canvas_pos + 3] = 255;
+
+                value = 0;
+                if (yMin <= y2 && y2 <= yMax && uMin <= u && u <= uMax && vMin <= v && v <= vMax) {
+                    value = 255;
+                }
+                data[canvas_pos + 4] = value;
+                data[canvas_pos + 5] = value;
+                data[canvas_pos + 6] = value;
+                data[canvas_pos + 7] = 255;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+    }
+
+    function yuv2rgb_jpeg(y, u, v) {
+        y = y;
+        u = u - 128;
+        v = v - 128;
+
+        r = y + 1.402 * v;
+        g = y - 0.344136 * u - 0.714136 * v;
+        b = y + 1.772 * u;
+
+        r = Math.round(Math.max(Math.min(r, 255), 0));
+        g = Math.round(Math.max(Math.min(g, 255), 0));
+        b = Math.round(Math.max(Math.min(b, 255), 0));
+
+        return [r, g, b];
+    }
+
+    function loadFile(e) {
+        let files = e.target.files;
+
+        if (files.length == 0) {
+            return;
+        }
+
+        let reader = new FileReader();
+        reader.onload = function (e) {
+            let imageCanvas = document.getElementById('image');
+            let thresholdCanvas = document.getElementById('threshold');
+            let thresholdOverlayCanvas = document.getElementById('threshold_overlay');
+            let width = parseInt(document.getElementById('width').value);
+            let height = parseInt(document.getElementById('height').value);
+
+            imageCanvas.width = width;
+            imageCanvas.height = height;
+            thresholdCanvas.width = width;
+            thresholdCanvas.height = height;
+            thresholdOverlayCanvas.width = width;
+            thresholdOverlayCanvas.height = height;
+
+            let ctx = imageCanvas.getContext('2d');
+
+            yuv = new Uint8Array(e.target.result);
+
+            const imageData = ctx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+            const data = imageData.data;
+            for (let y=0; y<height; y++) {
+                for (let x=0; x<width; x+=2) {
+                    let pos = (y * width + x);
+                    let yuv_pos = pos * 2 ;
+                    let canvas_pos = pos * 4;
+
+                    let y1 = yuv[yuv_pos];
+                    let u = yuv[yuv_pos + 1];
+                    let y2 = yuv[yuv_pos + 2];
+                    let v = yuv[yuv_pos + 3];
+
+                    let rgb1 = yuv2rgb_jpeg(y1, u, v);
+                    let rgb2 = yuv2rgb_jpeg(y2, u, v);
+
+                    data[canvas_pos] = rgb1[0];
+                    data[canvas_pos + 1] = rgb1[1];
+                    data[canvas_pos + 2] = rgb1[2];
+                    data[canvas_pos + 3] = 255;
+                    data[canvas_pos + 4] = rgb2[0];
+                    data[canvas_pos + 5] = rgb2[1];
+                    data[canvas_pos + 6] = rgb2[2];
+                    data[canvas_pos + 7] = 255;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+            drawThreshold();
+        };
+        reader.readAsArrayBuffer(files[0]);
+    }
+
+    function drawYUVPlane(id, y, uMin, uMax, vMin, vMax) {
+        let imageCanvas = document.getElementById(id);
+        let ctx = imageCanvas.getContext('2d');
+
+        const imageData = ctx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+        const data = imageData.data;
+        for (let v=0; v<256; v++) {
+            for (let u=0; u<256; u++) {
+                let pos = ((256 - v) * 256 + u) * 4;
+
+                let rgb = yuv2rgb_jpeg(y, u, v);
+                data[pos] = rgb[0];
+                data[pos + 1] = rgb[1];
+                data[pos + 2] = rgb[2];
+                data[pos + 3] = 255;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        // Draw min, max lines
+        ctx.beginPath();
+        ctx.moveTo(uMin, 0);
+        ctx.lineTo(uMin, 255);
+        ctx.moveTo(uMax, 0);
+        ctx.lineTo(uMax, 255);
+        ctx.moveTo(0, 255-vMin);
+        ctx.lineTo(255, 255-vMin);
+        ctx.moveTo(0, 255-vMax);
+        ctx.lineTo(255, 255-vMax);
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+    }
+
+    function sliderChange() {
+        let yMin = parseInt(document.getElementById('y_min').value);
+        let yMax = parseInt(document.getElementById('y_max').value);
+        let uMin = parseInt(document.getElementById('u_min').value);
+        let uMax = parseInt(document.getElementById('u_max').value);
+        let vMin = parseInt(document.getElementById('v_min').value);
+        let vMax = parseInt(document.getElementById('v_max').value);
+
+        document.getElementById('y_min_val').innerText = yMin;
+        document.getElementById('y_max_val').innerText = yMax;
+        document.getElementById('u_min_val').innerText = uMin;
+        document.getElementById('u_max_val').innerText = uMax;
+        document.getElementById('v_min_val').innerText = vMin;
+        document.getElementById('v_max_val').innerText = vMax;
+
+        drawYUVPlane('yuv_min_plane', yMin, uMin, uMax, vMin, vMax);
+        drawYUVPlane('yuv_max_plane', yMax, uMin, uMax, vMin, vMax);
+
+        drawThreshold();
+    }
+
+    function pickColor(event) {
+        let canvas = document.getElementById('image');
+        let width = parseInt(document.getElementById('width').value);
+        let selected_rgb = document.getElementById('selected_rgb');
+        let selected_yuv = document.getElementById('selected_yuv');
+
+        let ctx = canvas.getContext("2d");
+        const bounding = canvas.getBoundingClientRect();
+        const x = Math.floor(event.clientX - bounding.left);
+        const y = Math.floor(event.clientY - bounding.top);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        if (! yuv) {
+            return;
+        }
+
+        let p = (y * width + x) * 4;
+        selected_rgb.innerText = data[p+0] + ', ' + data[p+1] + ', ' + data[p+2];
+        let pos = (y * width + x) * 2;
+
+        if (x % 2) {
+            selected_yuv.innerText = yuv[pos] + ', ' + yuv[pos-1] + ', ' + yuv[pos+1];
+        } else {
+            selected_yuv.innerText = yuv[pos] + ', ' + yuv[pos+1] + ', ' + yuv[pos+3];
+        }
+    }
+
+    function drawThresholdTarget(event) {
+        let canvas = document.getElementById('image');
+        let overlay = document.getElementById('threshold_overlay');
+
+        let ctx = overlay.getContext("2d");
+        const bounding = canvas.getBoundingClientRect();
+        const x = Math.floor(event.clientX - bounding.left);
+        const y = Math.floor(event.clientY - bounding.top);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.strokeStyle = '#8888';
+        ctx.stroke();
+    }
+
+    document.getElementById('file').onchange = loadFile;
+    document.getElementById('y_min').oninput = sliderChange;
+    document.getElementById('y_max').oninput = sliderChange;
+    document.getElementById('u_min').oninput = sliderChange;
+    document.getElementById('u_max').oninput = sliderChange;
+    document.getElementById('v_min').oninput = sliderChange;
+    document.getElementById('v_max').oninput = sliderChange;
+    document.getElementById('image').onclick = pickColor;
+    document.getElementById('image').onmousemove = drawThresholdTarget;
+
+    drawYUVPlane('yuv_min_plane', 0, 0, 255, 0, 255);
+    drawYUVPlane('yuv_max_plane', 0, 0, 255, 0, 255);
+  </script>
+</body>
+</html>
