@@ -59,9 +59,11 @@
             <td>V Min:<input id="v_min" type="range" min="0" max="255" value="0" step="1"><span id="v_min_val">0</span></td>
             <td>V Max:<input id="v_max" type="range" min="0" max="255" value="255" step="1"><span id="v_max_val">255</span></td>
         </tr>
+        <tr>
+            <td><canvas id="yuv_min_plane" width="256" height="256"></canvas></td>
+            <td><canvas id="yuv_max_plane" width="256" height="256"></canvas></td>
+        </tr>
     </table>
-    <canvas id="yuv_min_plane" width="256" height="256"></canvas>
-    <canvas id="yuv_max_plane" width="256" height="256"></canvas>
   </main>
 
   <script>
