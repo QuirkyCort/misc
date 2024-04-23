@@ -34,10 +34,12 @@
     <canvas id="threshold" width="160" height="120"></canvas><canvas id="threshold_overlay" width="160" height="120"></canvas>
     <table>
         <tr>
-            <td>RGB: <span id="selected_rgb">Click on image to display</span></td>
+            <td>RGB: <span id="live_rgb">0, 0, 0</span>&nbsp;<span id="live_rgb_color">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+            <td>RGB (selected): <span id="selected_rgb">Click on image to display</span>&nbsp;<span id="selected_rgb_color">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
         </tr>
         <tr>
-            <td>YUV: <span id="selected_yuv">Click on image to display</span></td>
+            <td>YUV: <span id="live_yuv">0, 0, 0</span>&nbsp;<span id="live_yuv_color">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
+            <td>YUV (selected): <span id="selected_yuv">Click on image to display</span>&nbsp;<span id="selected_yuv_color">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
         </tr>
         <tr>
             <td>Width:<input id="width" type="number" value="160" step="1"></td>
@@ -248,11 +250,9 @@
         drawThreshold();
     }
 
-    function pickColor(event) {
+    function getColor(event) {
         let canvas = document.getElementById('image');
         let width = parseInt(document.getElementById('width').value);
-        let selected_rgb = document.getElementById('selected_rgb');
-        let selected_yuv = document.getElementById('selected_yuv');
 
         let ctx = canvas.getContext("2d");
         const bounding = canvas.getBoundingClientRect();
@@ -262,19 +262,54 @@
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
 
+        let colors = [[], []]
+        let pos = (y * width + x) * 4;
+        colors[0] = [data[pos+0], data[pos+1], data[pos+2]];
+        pos = (y * width + x) * 2;
+
+        if (x % 2) {
+            colors[1] = [yuv[pos], yuv[pos-1], yuv[pos+1]];
+        } else {
+            colors[1] = [yuv[pos], yuv[pos+1], yuv[pos+3]];
+        }
+
+        return colors;
+    }
+
+    function pickColor(event) {
+        let selected_rgb = document.getElementById('selected_rgb');
+        let selected_yuv = document.getElementById('selected_yuv');
+        let selected_rgb_color = document.getElementById('selected_rgb_color');
+        let selected_yuv_color = document.getElementById('selected_yuv_color');
+
         if (! yuv) {
             return;
         }
 
-        let p = (y * width + x) * 4;
-        selected_rgb.innerText = data[p+0] + ', ' + data[p+1] + ', ' + data[p+2];
-        let pos = (y * width + x) * 2;
+        colors = getColor(event);
 
-        if (x % 2) {
-            selected_yuv.innerText = yuv[pos] + ', ' + yuv[pos-1] + ', ' + yuv[pos+1];
-        } else {
-            selected_yuv.innerText = yuv[pos] + ', ' + yuv[pos+1] + ', ' + yuv[pos+3];
+        selected_rgb.innerText = colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2];
+        selected_yuv.innerText = colors[1][0] + ', ' + colors[1][1] + ', ' + colors[1][2];
+        selected_rgb_color.style.backgroundColor = 'rgb(' + colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2] + ')';
+        selected_yuv_color.style.backgroundColor = 'rgb(' + colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2] + ')';
+    }
+
+    function liveColor(event) {
+        let live_rgb = document.getElementById('live_rgb');
+        let live_yuv = document.getElementById('live_yuv');
+        let live_rgb_color = document.getElementById('live_rgb_color');
+        let live_yuv_color = document.getElementById('live_yuv_color');
+
+        if (! yuv) {
+            return;
         }
+
+        colors = getColor(event);
+
+        live_rgb.innerText = colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2];
+        live_yuv.innerText = colors[1][0] + ', ' + colors[1][1] + ', ' + colors[1][2];
+        live_rgb_color.style.backgroundColor = 'rgb(' + colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2] + ')';
+        live_yuv_color.style.backgroundColor = 'rgb(' + colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2] + ')';
     }
 
     function drawThresholdTarget(event) {
@@ -296,6 +331,11 @@
         ctx.stroke();
     }
 
+    function mouseMove(event) {
+        drawThresholdTarget(event);
+        liveColor(event);
+    }
+
     document.getElementById('file').onchange = loadFile;
     document.getElementById('y_min').oninput = sliderChange;
     document.getElementById('y_max').oninput = sliderChange;
@@ -304,7 +344,7 @@
     document.getElementById('v_min').oninput = sliderChange;
     document.getElementById('v_max').oninput = sliderChange;
     document.getElementById('image').onclick = pickColor;
-    document.getElementById('image').onmousemove = drawThresholdTarget;
+    document.getElementById('image').onmousemove = mouseMove;
 
     drawYUVPlane('yuv_min_plane', 0, 0, 255, 0, 255);
     drawYUVPlane('yuv_max_plane', 0, 0, 255, 0, 255);
