@@ -20,26 +20,11 @@
     .right {
         padding: 1em;
     }
-    .right > p {
+    .right > ul {
         margin-top: 0;
     }
     input[type=number] {
         width: 5em;
-    }
-
-    input[type=range] {
-        width: 20em;
-    }
-    td {
-        width: 25em;
-    }
-    #min_color, #max_color {
-        height: 1em;
-        width: 20em;
-    }
-    #threshold_overlay {
-        position: relative;
-        left: -160px;
     }
   </style>
 </head>
@@ -89,8 +74,7 @@
         <div class="right">
             <ul>
                 <li>Output of this stage is a grayscale image, where each pixel is either 255 or 0.</li>
-                <li>Pixels above max will always be marked as edge (255)</li>
-                <li>Pixels below min will always be marked as non-edge (0)</li>
+                <li>Pixels above max will always be marked as edge (255), while those below min will always be marked as non-edge (0)</li>
                 <li>Pixels in-between min and max will be marked as edge if they are next to an edge.</li>
             </ul>
             Min Threshold:<input id="minV" type="number" value="3200" step="1">
@@ -103,8 +87,13 @@
             <h4>Stage 3:<br>Circle Detection</h4>
         </div>
         <div class="right">
-            Circle Radius:<input id="radius" type="number" value="13" step="1">
-            Pixel Threshold:<input id="pixel_threshold" type="number" value="55" step="1">
+            <ul>
+                <li>Start with a low threshold. About 2 times of radius is a good start. Adjust your radius until the desired circle is detected.</li>
+                <li>Increase the threshold to remove false positives.</li>
+                <li>This circle detection can only detect a single radius at a time. If you need to detect another significantly larger or smaller circle, you'll need to run the circle_detection function twice.</li>
+            </ul>
+            Circle Radius:<input id="radius" type="number" value="10" step="1">
+            Pixel Threshold:<input id="pixel_threshold" type="number" value="20" step="1">
         </div>
     </div>
 

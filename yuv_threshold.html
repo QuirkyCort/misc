@@ -99,7 +99,7 @@
         }
 
         for (let y=0; y<height; y++) {
-            let row = y * width;
+            let row = y * width * 2;
             let row_m1 = y - 1;
             let row_p1 = y + 1;
             if (row_m1 < 0) {
@@ -107,11 +107,12 @@
             } else if (row_p1 > height - 1) {
                 row_p1 = 2 * height - row_p1 - 2;
             }
-            row_m1 *= width;
-            row_p1 *= width;
+            row_m1 *= width * 2;
+            row_p1 *= width * 2;
 
             for (x=0; x<width; x++) {
-                let pos = row + x;
+                x2 = x * 2;
+                let pos = row + x2;
                 let x_m1 = x-1;
                 let x_p1 = x+1;
                 if (x_m1 < 0) {
@@ -119,10 +120,13 @@
                 } else if (x_p1 > width - 1) {
                     x_p1 = 2 * width - x_p1 - 2;
                 }
-                let pixel = 4 * buf[2 * pos];
-                pixel += 2 * (buf[2 * (row + x_m1)] + buf[2 * (row + x_p1)] + buf[2 * (row_m1 + x)] + buf[2 * (row_p1 + x)]);
-                pixel += buf[2 * (row_m1 + x_m1)] + buf[2 * (row_m1 + x_p1)] + buf[2 * (row_p1 + x_m1)] + buf[2 * (row_p1 + x_p1)];
-                blurred[2 * pos] = Math.floor(pixel / 16);
+                x_m1 *= 2;
+                x_p1 *= 2;
+
+                let pixel = 4 * buf[pos];
+                pixel += 2 * (buf[row + x_m1] + buf[row + x_p1] + buf[row_m1 + x2] + buf[row_p1 + x2]);
+                pixel += buf[row_m1 + x_m1] + buf[row_m1 + x_p1] + buf[row_p1 + x_m1] + buf[row_p1 + x_p1];
+                blurred[pos] = Math.floor(pixel / 16);
             }
         }
 
@@ -140,7 +144,7 @@
             row_p1 *= halfWidth * 4;
 
             for (x=0; x<halfWidth; x++) {
-                x4 = x * 4
+                x4 = x * 4;
                 let pos = row + x4;
                 let x_m1 = x-1;
                 let x_p1 = x+1;
