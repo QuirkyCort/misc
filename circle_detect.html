@@ -60,11 +60,10 @@
             <h4>Stage 0:<br>Load File</h4>
         </div>
         <div class="right">
-            <p>
-                You must set the width and height correctly before loading the image file.
-                Image file must be YUV or Grayscale.
-                YUV files will be auto-converted to Grayscale.
-            </p>
+            <ul>
+                <li>You must set the width and height correctly before loading the image file.</li>
+                <li>Image file must be YUV or Grayscale (YUV files will be auto-converted to Grayscale).</li>
+            </ul>
             Width:<input id="width" type="number" value="160" step="1">
             Height:<input id="height" type="number" value="120" step="1">
             <input id="file" type="file">
@@ -88,9 +87,12 @@
             <h4>Stage 2:<br>Edge Detection</h4>
         </div>
         <div class="right">
-            <p>
-                Pixels above max will always be marked as edge, those below min will always be marked as non-edge, those in-between will be marked as edge if they are next to an edge.
-            </p>
+            <ul>
+                <li>Output of this stage is a grayscale image, where each pixel is either 255 or 0.</li>
+                <li>Pixels above max will always be marked as edge (255)</li>
+                <li>Pixels below min will always be marked as non-edge (0)</li>
+                <li>Pixels in-between min and max will be marked as edge if they are next to an edge.</li>
+            </ul>
             Min Threshold:<input id="minV" type="number" value="3200" step="1">
             Max Threshold:<input id="maxV" type="number" value="6400" step="1">
         </div>
