@@ -203,19 +203,14 @@
             let row = y * width;
             for (let x=1; x<width-1; x++) {
                 let pos = row + x;
-                let gx = buf[pos - 1] * -2;
-                gx += buf[pos + 1] * 2;
-                gx -= buf[pos - 1 - width];
-                gx += buf[pos + 1 - width];
-                gx -= buf[pos - 1 + width];
-                gx += buf[pos + 1 + width];
-                let gy = buf[pos - width] * -2;
-                gy += buf[pos + width] * 2;
-                gy -= buf[pos - width - 1];
-                gy += buf[pos + width - 1];
-                gy -= buf[pos - width + 1];
-                gy += buf[pos + width + 1];
-                g[pos] = gx**2 + gy**2;
+                let tl = buf[pos - 1 - width];
+                let tr = buf[pos + 1 - width];
+                let bl = buf[pos - 1 + width];
+                let br = buf[pos + 1 + width];
+
+                let gx = 2 * (buf[pos + 1] - buf[pos - 1]) - tl + tr - bl + br;
+                let gy = 2 * (buf[pos + width] - buf[pos - width]) - tl + bl - tr + br;
+                g[pos] = gx*gx + gy*gy;
             }
         }
         return g
@@ -274,21 +269,26 @@
         let minR2 = Math.ceil((r - 0.5) ** 2);
         let maxR2 = Math.floor((r + 0.5) ** 2);
 
+        let offsets = [];
+        for (y=-r; y<r; y++) {
+            let dy = y ** 2;
+            for (x=-r; x<r; x++) {
+                let a_r = x**2 + dy;
+                if (minR2 <= a_r && a_r <= maxR2) {
+                    offsets.push([x - r, y - r])
+                }
+            }
+        }
+
         for (y=0; y<height; y++) {
             let row = y * width;
             for (x=0; x<width; x++) {
                 if (buf[row + x]) {
-                    let x_start = Math.max(x - r, r);
-                    let x_end = Math.min(x + r, a_w + r);
-                    let y_start = Math.max(y - r, r);
-                    let y_end = Math.min(y + r, a_h + r);
-                    for (let a=y_start; a<y_end; a++) {
-                        let dy = (y - a) ** 2;
-                        for (let b=x_start; b<x_end; b++) {
-                            let a_r = (x - b)**2 + dy;
-                            if (minR2 <= a_r && a_r <= maxR2) {
-                                accum[a-r][b-r] += 1;
-                            }
+                    for (offset of offsets) {
+                        let x_pos = offset[0] + x;
+                        let y_pos = offset[1] + y;
+                        if (0 <= x_pos && x_pos < a_w && 0 <= y_pos && y_pos < a_h) {
+                            accum[y_pos][x_pos] += 1;
                         }
                     }
                 }
