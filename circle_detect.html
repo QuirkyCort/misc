@@ -300,9 +300,9 @@
         let maxR2 = Math.floor((r + 0.5) ** 2);
 
         let offsets = [];
-        for (y=-r; y<r; y++) {
+        for (y=-r; y<r+1; y++) {
             let dy = y ** 2;
-            for (x=-r; x<r; x++) {
+            for (x=-r; x<r+1; x++) {
                 let a_r = x**2 + dy;
                 if (minR2 <= a_r && a_r <= maxR2) {
                     offsets.push([x - r, y - r])
