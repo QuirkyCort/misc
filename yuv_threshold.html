@@ -20,9 +20,22 @@
         height: 1em;
         width: 20em;
     }
-    #threshold_overlay {
+    .canvas_row {
+        display: flex;
+    }
+    .canvas_row > * {
+        margin-right: 5px;
+    }
+    .canvas_row canvas {
+        width: 280px;
+    }
+    .canvas_group {
         position: relative;
-        left: -160px;
+    }
+    #threshold_overlay {
+        position: absolute;
+        top: 0px;
+        left: 0px;
     }
   </style>
 </head>
@@ -33,8 +46,14 @@
   </header>
 
   <main>
-    <canvas id="image" width="160" height="120"></canvas>
-    <canvas id="threshold" width="160" height="120"></canvas><canvas id="threshold_overlay" width="160" height="120"></canvas>
+    <div class="canvas_row">
+        <canvas id="image" width="160" height="120"></canvas>
+        <div class="canvas_group">
+            <canvas id="threshold" width="160" height="120"></canvas>
+            <canvas id="threshold_overlay" width="160" height="120"></canvas>
+        </div>
+        <canvas id="results_box" width="160" height="120"></canvas>
+    </div>
     <table>
         <tr>
             <td>RGB: <span id="live_rgb">0, 0, 0</span>&nbsp;<span id="live_rgb_color">&nbsp;&nbsp;&nbsp;&nbsp;</span></td>
@@ -57,6 +76,7 @@
         <option value="noblur">No Blurring</option>
         <option value="gaussian_3x3">3x3 Gaussian Blur</option>
     </select>
+    Pixle Threshold: <input id="pixel_threshold" type="number" min="0" value="10" step="1">
 
     <table>
         <tr>
@@ -76,6 +96,13 @@
             <td><canvas id="yuv_max_plane" width="256" height="256"></canvas></td>
         </tr>
     </table>
+    <ul>
+        <li>Result is a list of matches sorted by number of pixels in the blob (largest first).</li>
+        <li>Each match contains; number_of_pixels, center_x_position, center_y_position, top_left_x, top_left_y, width, height</li>
+        <li>Note that detection dimensions is half that of the image dimensions (ie. if the image is 160px wide, the center of detection will be at 40 and not 80).</li>
+    </ul>
+    <div id="results"></div>
+
   </main>
 
   <script>
@@ -171,10 +198,155 @@
         return blurred
     }
 
+    function _process_blobs(blobs, pixelsThreshold) {
+        let keys = Object.keys(blobs).map(x => parseInt(x));
+        function cmp(a, b) {
+            if (a < b) {
+                return -1;
+            } else if (a > b) {
+                return 1;
+            }
+            return 0;
+        }
+        keys.sort(cmp);
+        for (let i=keys.length-1; i>-1; i--) {
+            let key = keys[i];
+            for (let j=i-1; j>-1; j--) {
+                if (blobs[keys[j]][0].has(key)) {
+                    blobs[keys[j]][0] = blobs[keys[j]][0].union(blobs[key][0]);
+                    blobs[keys[j]][1] += blobs[key][1];
+                    blobs[keys[j]][2] += blobs[key][2];
+                    blobs[keys[j]][3] += blobs[key][3];
+                    blobs[keys[j]][4] = Math.min(blobs[keys[j]][4], blobs[key][4]);
+                    blobs[keys[j]][5] = Math.max(blobs[keys[j]][5], blobs[key][5]);
+                    blobs[keys[j]][6] = Math.min(blobs[keys[j]][6], blobs[key][6]);
+                    blobs[keys[j]][7] = Math.max(blobs[keys[j]][7], blobs[key][7]);
+                    delete blobs[key];
+                    break;
+                }
+            }
+        }
+
+        let results = [];
+        for (let k in blobs) {
+            let blob = blobs[k]
+            if (blob[1] >= pixelsThreshold) {
+                results.push([
+                    blob[1],
+                    blob[2] / blob[1],
+                    blob[3] / blob[1],
+                    blob[4],
+                    blob[6],
+                    blob[5] - blob[4]+1,
+                    blob[7] - blob[6]+1
+                ])
+            }
+        }
+        function cmp2(a, b) {
+            if (a[0] < b[0]) {
+                return 1;
+            } else if (a[0] > b[0]) {
+                return -1;
+            }
+            return 0;
+        }
+        results.sort(cmp2);
+        return results;
+    }
+
+    function find_blobs_yuv422(buf, width, height, thresholds, pixelsThreshold) {
+        let blobs = {};
+        let groupings = [];
+        for (let y=0; y<Math.floor(height/2); y++) {
+            let row = [];
+            for (let x=0; x<Math.floor(width/2); x++) {
+                row.push(0);
+            }
+            groupings.push(row);
+        }
+        let next_group = 1
+        let threshold0 = thresholds[0];
+        let threshold1 = thresholds[1];
+        let threshold2 = thresholds[2];
+        let threshold3 = thresholds[3];
+        let threshold4 = thresholds[4];
+        let threshold5 = thresholds[5];
+
+        for (let y=0; y<Math.floor(height/2); y++) {
+            let row = y * 2 * width;
+            for (let x=0; x<Math.floor(width/2); x++) {
+                let pos = (row + x * 2) * 2;
+
+                if (threshold0 <= buf[pos] && buf[pos]<= threshold1 && threshold2 <= buf[pos+1] && buf[pos+1] <= threshold3 && threshold4 <= buf[pos+3] && buf[pos+3] <= threshold5) {
+                    let left = 0;
+                    let top = 0;
+                    if (x != 0) {
+                        left = groupings[y][x-1];
+                    }
+                    if (y != 0) {
+                        top = groupings[y-1][x];
+                    }
+
+                    if (left == 0 && top == 0) {
+                        groupings[y][x] = next_group;
+                        blobs[next_group] = [new Set([next_group]), 1, x, y, x, x, y, y];
+                        next_group += 1;
+                    } else if (left != 0) {
+                        groupings[y][x] = left;
+                        blob = blobs[left];
+                        blob[1] += 1;
+                        blob[2] += x;
+                        blob[3] += y;
+                        if (x < blob[4]) {
+                            blob[4] = x;
+                        } else if (x > blob[5]) {
+                            blob[5] = x;
+                        }
+                        if (y < blob[6]) {
+                            blob[6] = y;
+                        } else if (y > blob[7]) {
+                            blob[7] = y;
+                        }
+
+                        if (top != 0) {
+                            if (left > top) {
+                                blobs[top][0].add(left);
+                            } else if (top > left) {
+                                blob[0].add(top);
+                            }
+                        }
+                    } else if (top != 0) {
+                        groupings[y][x] = top;
+                        blob = blobs[top];
+                        blob[1] += 1;
+                        blob[2] += x;
+                        blob[3] += y;
+                        if (x < blob[4]) {
+                            blob[4] = x;
+                        } else if (x > blob[5]) {
+                            blob[5] = x;
+                        }
+                        if (y < blob[6]) {
+                            blob[6] = y;
+                        } else if (y > blob[7]) {
+                            blob[7] = y;
+                        }
+                    }
+                }
+            }
+        }
+
+        return _process_blobs(blobs, pixelsThreshold);
+    }
+
     function drawYUV() {
         let imageCanvas = document.getElementById('image');
         imageCanvas.width = width;
         imageCanvas.height = height;
+
+        imageCanvas.width = width;
+        imageCanvas.height = height;
+        imageCanvas.style.height = height / width * imageCanvas.clientWidth + 'px';
 
         let ctx = imageCanvas.getContext('2d');
 
@@ -221,6 +393,13 @@
         thresholdCanvas.height = height;
         thresholdOverlayCanvas.width = width;
         thresholdOverlayCanvas.height = height;
+
+        thresholdCanvas.width = width;
+        thresholdCanvas.height = height;
+        thresholdCanvas.style.height = height / width * thresholdCanvas.clientWidth + 'px';
+        thresholdOverlayCanvas.width = width;
+        thresholdOverlayCanvas.height = height;
+        thresholdOverlayCanvas.style.height = height / width * thresholdOverlayCanvas.clientWidth + 'px';
 
         let ctx = thresholdCanvas.getContext('2d');
 
@@ -309,6 +488,7 @@
 
         drawYUV();
         drawThreshold();
+        drawResults();
     }
 
     function drawYUVPlane(id, y, uMin, uMax, vMin, vMax) {
@@ -344,6 +524,46 @@
         ctx.stroke();
     }
 
+    function drawResults() {
+        let yMin = parseInt(document.getElementById('y_min').value);
+        let yMax = parseInt(document.getElementById('y_max').value);
+        let uMin = parseInt(document.getElementById('u_min').value);
+        let uMax = parseInt(document.getElementById('u_max').value);
+        let vMin = parseInt(document.getElementById('v_min').value);
+        let vMax = parseInt(document.getElementById('v_max').value);
+        let pixel_threshold = parseInt(document.getElementById('pixel_threshold').value);
+        let resultsDiv = document.getElementById('results');
+        let thresholdCanvas = document.getElementById('threshold');
+        let results_box = document.getElementById('results_box');
+
+        results_box.width = width;
+        results_box.height = height;
+        results_box.style.height = height / width * results_box.clientWidth + 'px';
+
+        let ctx = thresholdCanvas.getContext('2d');
+        let ctx2 = results_box.getContext('2d');
+
+        const imageData = ctx.getImageData(0, 0, thresholdCanvas.width, thresholdCanvas.height);
+        const data = imageData.data;
+        const imageData2 = ctx.getImageData(0, 0, results_box.width, results_box.height);
+        const data2 = imageData2.data;
+        for (let i=0; i<(width+height)*4; i++) {
+            data2[i] = data[i];
+        }
+        ctx2.putImageData(imageData2, 0, 0);
+
+        let results = find_blobs_yuv422(yuv, width, height, [yMin, yMax, uMin, uMax, vMin, vMax], pixel_threshold);
+        resultsDiv.innerHTML = '';
+        ctx2.beginPath();
+        for (let row of results) {
+            resultsDiv.innerHTML += row[0] + ', ' + Math.round(row[1]*10)/10 + ', ' + Math.round(row[2]*10)/10 + ', ' + row[3] + ', ' + row[4] + ', ' + row[5] + ', ' + row[6] + '<br>';
+            ctx2.moveTo(row[3]*2, row[4]*2);
+            ctx2.rect(row[3]*2, row[4]*2, row[5]*2, row[6]*2);
+        }
+        ctx2.strokeStyle = '#FF0000';
+        ctx2.stroke();
+    }
+
     function sliderChange() {
         let yMin = parseInt(document.getElementById('y_min').value);
         let yMax = parseInt(document.getElementById('y_max').value);
@@ -363,6 +583,7 @@
         drawYUVPlane('yuv_max_plane', yMax, uMin, uMax, vMin, vMax);
 
         drawThreshold();
+        drawResults();
     }
 
     function getColor(event) {
@@ -371,8 +592,12 @@
 
         let ctx = canvas.getContext("2d");
         const bounding = canvas.getBoundingClientRect();
-        const x = Math.floor(event.clientX - bounding.left);
-        const y = Math.floor(event.clientY - bounding.top);
+        let x = Math.floor(event.clientX - bounding.left);
+        let y = Math.floor(event.clientY - bounding.top);
+
+        x = Math.round(x / canvas.clientWidth * canvas.width);
+        y = Math.round(y / canvas.clientHeight * canvas.height);
+        console.log(x, y);
 
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
@@ -433,8 +658,11 @@
 
         let ctx = overlay.getContext("2d");
         const bounding = canvas.getBoundingClientRect();
-        const x = Math.floor(event.clientX - bounding.left);
-        const y = Math.floor(event.clientY - bounding.top);
+        let x = Math.floor(event.clientX - bounding.left);
+        let y = Math.floor(event.clientY - bounding.top);
+
+        x = x / canvas.clientWidth * canvas.width;
+        y = y / canvas.clientHeight * canvas.height;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
@@ -461,6 +689,7 @@
     document.getElementById('image').onclick = pickColor;
     document.getElementById('image').onmousemove = mouseMove;
     document.getElementById('blur').onchange = process;
+    document.getElementById('pixel_threshold').onchange = process;
 
     drawYUVPlane('yuv_min_plane', 0, 0, 255, 0, 255);
     drawYUVPlane('yuv_max_plane', 0, 0, 255, 0, 255);
