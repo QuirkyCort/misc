@@ -1,5 +1,5 @@
 /**
- * Base for ESP32-Cam (Does not include adapter)
+ * Base for OpenMV Cam H7, H7+ (Does not include base)
  */
 
 const jscad = require('@jscad/modeling')
@@ -11,16 +11,16 @@ const { measureBoundingBox } = require('@jscad/modeling').measurements
 
 const SWIVEL_THICKNESS = 4;
 const SWIVEL_LENGTH = 11;
+const BASE_THICKNESS = 4;
+const MOUNTING_THICKNESS = 3;
 
 const getParameterDefinitions = () => {
   return [
-    { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'], captions: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'], initial: 'A2' },
     { name: 'swivelXOffset', type: 'float', initial: 4, step: 0.1, caption: 'Swivel Mount X Offset' },
-    { name: 'swivelHeight', type: 'float', initial: 26, step: 0.1, caption: 'Swivel Mount Height' },
+    { name: 'swivelHeight', type: 'float', initial: 12, step: 0.1, caption: 'Swivel Mount Height' },
+    { name: 'mountingLength', type: 'float', initial: 29.46, step: 0.1, caption: 'Camera Mount Length' },
+    { name: 'mountingHeight', type: 'float', initial: 3, step: 0.1, caption: 'Camera Mount Height' },
     { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
-    { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
-    { name: 'legoOuterDia', type: 'float', initial: 6.2, caption: 'Lego: Outer diameter of hole' },
-    { name: 'legoHeight', type: 'float', initial: 0.8, caption: 'Lego: Height of outer diameter' },
   ]
 }
 
@@ -87,58 +87,25 @@ const main = (params) => {
   const solids = [];
   const holes = [];
 
-  const type = params.type;
+  const swivelXOffset = params.swivelXOffset;
+  const m3_hole = params.m3_hole;
+  const mountingHeight = params.mountingHeight;
+  const mountingLength = params.mountingLength;
 
-  let exclude = [];
-  let yOffset = 0;
-  if (type == 'A1') {
-    solids.push(cuboid({size: [24, 16, 8], center: [0, 8, 4]}))
-    exclude = ['1,0'];
-    yOffset = 3;
-  } else if (type == 'A2') {
-    solids.push(cuboid({size: [24, 24, 8], center: [0, 12, 4]}))
-    exclude = ['1,0', '1,1'];
-    yOffset = 11;
-  } else if (type == 'A3') {
-    solids.push(cuboid({size: [24, 32, 8], center: [0, 16, 4]}))
-    exclude = ['1,1', '1,2'];
-    yOffset = 16;
-  } else if (type == 'B1') {
-    solids.push(cuboid({size: [32, 16, 8], center: [0, 8, 4]}))
-    exclude = ['1,0', '2,0'];
-    yOffset = 3.5;
-  } else if (type == 'B2') {
-    solids.push(cuboid({size: [32, 24, 8], center: [0, 12, 4]}))
-    exclude = ['1,0', '2,0', '1,1', '2,1'];
-    yOffset = 11.5;
-  } else if (type == 'B3') {
-    solids.push(cuboid({size: [32, 32, 8], center: [0, 16, 4]}))
-    exclude = ['1,1', '2,1', '1,2', '2,2'];
-    yOffset = 16;
-  }
+  solids.push(translate([swivelXOffset, 0, 0], swivel(params)))
 
-  solids.push(translate([0, yOffset, 0], swivel(params)))
+  let length = mountingLength + m3_hole + MOUNTING_THICKNESS * 2
+  solids.push(cuboid({size: [length, SWIVEL_LENGTH, BASE_THICKNESS], center: [0, 0, BASE_THICKNESS/2]}));
 
-  if (type.includes('A')) {
-    for (let x=0; x<3; x++) {
-      for (let y=0; y<4; y++) {
-        if (exclude.includes(x + ',' + y)) {
-          continue;
-        }
-        holes.push(legoHole(x*8 - 8, y*8 + 4, 4, params))
-      }
-    }
-  } else if (type.includes('B')) {
-    for (let x=0; x<4; x++) {
-      for (let y=0; y<4; y++) {
-        if (exclude.includes(x + ',' + y)) {
-          continue;
-        }
-        holes.push(legoHole(x*8 - 12, y*8 + 4, 4, params))
-      }
-    }
-  }
+  let width = m3_hole + MOUNTING_THICKNESS * 2
+  solids.push(cuboid({size: [width, mountingHeight, BASE_THICKNESS], center: [length/2 - width/2, SWIVEL_LENGTH/2 + mountingHeight/2, BASE_THICKNESS/2]}));
+  solids.push(cuboid({size: [width, mountingHeight, BASE_THICKNESS], center: [-length/2 + width/2, SWIVEL_LENGTH/2 + mountingHeight/2, BASE_THICKNESS/2]}));
 
+  solids.push(cylinder({radius: width/2, height: BASE_THICKNESS, center: [mountingLength/2, SWIVEL_LENGTH/2 + mountingHeight, BASE_THICKNESS/2], segments: 32}))
+  solids.push(cylinder({radius: width/2, height: BASE_THICKNESS, center: [-mountingLength/2, SWIVEL_LENGTH/2 + mountingHeight, BASE_THICKNESS/2], segments: 32}))
+
+  holes.push(cylinder({radius: m3_hole/2, height: BASE_THICKNESS, center: [mountingLength/2, SWIVEL_LENGTH/2 + mountingHeight, BASE_THICKNESS/2], segments: 32}))
+  holes.push(cylinder({radius: m3_hole/2, height: BASE_THICKNESS, center: [-mountingLength/2, SWIVEL_LENGTH/2 + mountingHeight, BASE_THICKNESS/2], segments: 32}))
 
   return merge(solids, holes);
 }
