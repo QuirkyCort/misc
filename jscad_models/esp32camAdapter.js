@@ -9,7 +9,7 @@ const { rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 const { extrudeLinear } = require('@jscad/modeling').extrusions
 const { measureBoundingBox } = require('@jscad/modeling').measurements
 
-const ESP32_Length = 40;
+const ESP32_Length = 41;
 const FRONT_THICKNESS = 2;
 const BACK_THICKNESS = 2;
 const SCREW_OFFSET = 3.5;
