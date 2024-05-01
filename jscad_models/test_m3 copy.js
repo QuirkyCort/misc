@@ -1,7 +1,7 @@
 /**
  * Test model for m3 hole
  */
-include("lib.js");
+const lib = require("lib.js");
 
 const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
@@ -45,7 +45,6 @@ const legoAxle = (x, y, z, depth, params) => {
 }
 
 const main = (params) => {
-  op();
   const solids = [];
   const holes = [];
 
@@ -55,7 +54,7 @@ const main = (params) => {
   solids.push(cuboid({size: [8, 8, 8], center: [0, 0, 0]}))
   holes.push(cylinder({radius: m3/2, height: 8, segments: 32}))
 
-  return op.merge(solids, holes);
+  return lib.merge(solids, holes);
 }
 
 module.exports = { getParameterDefinitions, main }
