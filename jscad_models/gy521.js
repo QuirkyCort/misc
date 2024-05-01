@@ -8,7 +8,7 @@ const { cylinder, cuboid } = jscad.primitives
 
 const getParameterDefinitions = () => {
   return [
-    { name: 'type', type: 'choice', caption: 'Sensor Type', values: ['gy521', 'mpu9250'], captions: ['GY-521', 'MPU-9250'], initial: 0 },
+    { name: 'type', type: 'choice', caption: 'Sensor Type', values: ['gy521', 'mpu9250'], captions: ['GY-521', 'MPU-9250'], initial: 'gy521' },
     { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
     { name: 'bigger', type: 'checkbox', checked: false, caption: 'Bigger base' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },

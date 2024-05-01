@@ -11,7 +11,7 @@ const getParameterDefinitions = () => {
     { name: 'height', type: 'float', initial: 18, caption: 'Overall height' },
     { name: 'diameter', type: 'float', initial: 6, step: 0.5, caption: 'Diameter of mount points' },
     { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
-    { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'B'], captions: ['A1', 'A2', 'B'], initial: 0 },
+    { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'B'], captions: ['A1', 'A2', 'B'], initial: 'A1' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
     { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
     { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
