@@ -5,7 +5,7 @@
 const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid, polygon } = jscad.primitives
-const { rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 const { extrudeLinear } = require('@jscad/modeling').extrusions
 const { measureBoundingBox } = require('@jscad/modeling').measurements
 
@@ -15,7 +15,7 @@ const SWIVEL_LENGTH = 11;
 const getParameterDefinitions = () => {
   return [
     { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'], captions: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'], initial: 'A2' },
-    { name: 'swivelHeight', type: 'float', initial: 26, step: 0.1, caption: 'Swivel Mount Height' },
+    { name: 'swivelHeight', type: 'float', initial: 16, step: 0.1, caption: 'Swivel Mount Protrusion Length' },
     { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
     { name: 'legoOuterDia', type: 'float', initial: 6.2, caption: 'Lego: Outer diameter of hole' },
@@ -32,7 +32,7 @@ const legoHole = (x, y, z, params) => {
   const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 32})
   const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
 
-  return union(center, union(top, bottom));
+  return union(center, top, bottom);
 }
 
 const legoAxle = (x, y, z, depth, params) => {
@@ -54,17 +54,14 @@ const legoAxle = (x, y, z, depth, params) => {
 }
 
 const merge = (solids, holes) => {
-  let shape = solids[0];
+  let solid = union(...solids)
 
-  for (let i=1; i<solids.length; i++) {
-    shape = union(shape, solids[i])
+  if (holes.length > 0) {
+    let hole = union(...holes)
+    return subtract(solid, hole);
   }
 
-  for (let i=0; i<holes.length; i++) {
-    shape = subtract(shape, holes[i])
-  }
-
-  return shape;
+  return solid;
 }
 
 const swivel = (params) => {
@@ -89,34 +86,27 @@ const main = (params) => {
   const type = params.type;
 
   let exclude = [];
-  let yOffset = 0;
   if (type == 'A1') {
     solids.push(cuboid({size: [24, 16, 8], center: [0, 8, 4]}))
-    exclude = ['1,0'];
-    yOffset = 3;
   } else if (type == 'A2') {
     solids.push(cuboid({size: [24, 24, 8], center: [0, 12, 4]}))
-    exclude = ['1,0', '1,1'];
-    yOffset = 11;
   } else if (type == 'A3') {
     solids.push(cuboid({size: [24, 32, 8], center: [0, 16, 4]}))
-    exclude = ['1,1', '1,2'];
-    yOffset = 16;
   } else if (type == 'B1') {
     solids.push(cuboid({size: [32, 16, 8], center: [0, 8, 4]}))
-    exclude = ['1,0', '2,0'];
-    yOffset = 3.5;
   } else if (type == 'B2') {
     solids.push(cuboid({size: [32, 24, 8], center: [0, 12, 4]}))
-    exclude = ['1,0', '2,0', '1,1', '2,1'];
-    yOffset = 11.5;
   } else if (type == 'B3') {
     solids.push(cuboid({size: [32, 32, 8], center: [0, 16, 4]}))
-    exclude = ['1,1', '2,1', '1,2', '2,2'];
-    yOffset = 16;
   }
 
-  solids.push(translate([0, yOffset, 0], swivel(params)))
+  solids.push(translate([0, 0, SWIVEL_LENGTH/2], rotateX(Math.PI/2, swivel(params))))
+
+  // Fillet
+  solids.push(cuboid({size: [8, 8, 8], center: [4+SWIVEL_THICKNESS/2, -4, 4]}))
+  holes.push(cylinder({radius: 8, height: 8, center: [8+SWIVEL_THICKNESS/2, -8, 4], segments: 32}))
+  solids.push(cuboid({size: [8, 8, 8], center: [-4-SWIVEL_THICKNESS/2, -4, 4]}))
+  holes.push(cylinder({radius: 8, height: 8, center: [-8-SWIVEL_THICKNESS/2, -8, 4], segments: 32}))
 
   if (type.includes('A')) {
     for (let x=0; x<3; x++) {
