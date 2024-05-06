@@ -73,7 +73,13 @@ const main = (params) => {
   const type = params.type;
   const m3 = params.m3;
 
-  solids.push(cuboid({size: [8*width, 8*length, 8], center: [8*width/2, 8*length/2, 0]}))
+  solids.push(cuboid({size: [8*width-8, 8*length, 8], center: [8*width/2, 8*length/2, 0]}))
+  solids.push(cuboid({size: [8*width, 8*length-8, 8], center: [8*width/2, 8*length/2, 0]}))
+
+  solids.push(cylinder({radius: 4, height: 8, center: [4, 4, 0], segments: 32}))
+  solids.push(cylinder({radius: 4, height: 8, center: [8*width-4, 4, 0], segments: 32}))
+  solids.push(cylinder({radius: 4, height: 8, center: [4, 8*length-4, 0], segments: 32}))
+  solids.push(cylinder({radius: 4, height: 8, center: [8*width-4, 8*length-4, 0], segments: 32}))
 
   for (let x=0; x<width; x+=steps) {
     for (let y=0; y<length; y+=steps) {
