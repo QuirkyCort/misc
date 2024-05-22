@@ -130,8 +130,12 @@ const main = (params) => {
 
   // Lego Holes
   if (lastOnly) {
-    holes.push(legoHole(-(firstLegoHolePos + (length1-1)*8), 0, 0, params))
-    holes.push(legoHole(firstLegoHolePos + (length2-1)*8, 0, 0, params))
+    if (length1 > 0) {
+      holes.push(legoHole(-(firstLegoHolePos + (length1-1)*8), 0, 0, params))
+    }
+    if (length2 > 0) {
+      holes.push(legoHole(firstLegoHolePos + (length2-1)*8, 0, 0, params))
+    }
   } else {
     for (let i=0; i<length1; i++) {
       holes.push(legoHole(-(firstLegoHolePos + i*8), 0, 0, params))
