@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Ice Breaker</title>
+  <style>
+      body {
+        font-family: sans-serif;
+        font-size: 300%;
+      }
+      header {
+        text-align: center;
+        font-weight: bold;
+      }
+      main {
+        margin-top: 1em;
+        border: solid 2px darkgray;
+        border-radius: 0.5em;
+        padding: 0.5em;
+      }
+      #yesNoMain {
+        background: yellow;
+      }
+      #animalsMain {
+        background: pink;
+      }
+      .result {
+        border: solid 1px black;
+        border-radius: 0.2em;
+        margin: 0.3em;
+        padding: 0.2em;
+        text-align: center;
+      }
+      #buttonsBox {
+          display: flex;
+          justify-content: space-around;
+      }
+      button {
+          font-size: 100%;
+          border-radius: 0.2em;
+      }
+  </style>
+</head>
+
+<body>
+    <main id="yesNoMain">
+        <header>Yes or No</header>
+        <div id="yesNo" class="result">-----</div>
+        <div id="buttonsBox">
+            <button id="yesNoGet">Get</button>
+            <button id="yesNoClear">Clear</button>
+        </div>
+    </main>
+
+    <main id="animalsMain">
+    <header>Animals</header>
+    <div id="animals" class="result">-----</div>
+    <div id="buttonsBox">
+        <button id="animalsGet">Get</button>
+        <button id="animalsClear">Clear</button>
+    </div>
+    </main>
+
+  <script>
+    const yesNoList = [
+        'Flower', 'Boat', 'Baby', 'Ears', 'Scissors', 'Phone', 'Toothbrush', 'Book',
+        'House', 'Bird', 'Banana', 'Chicken', 'Rabbit', 'Pie', 'Apple', 'Ball'
+    ]
+    const animalsList = [
+        'Bat', 'Bear', 'Buffalo', 'Chicken', 'Lion', 'Monkey', 'Dolphin', 'Elephant',
+        'Kangaroo', 'Horse', 'Whale', 'Wolf', 'Sheep', 'Owl', 'Tiger', 'Turkey'
+    ]
+
+    let yesNoGet = document.getElementById('yesNoGet');
+    let yesNoClear = document.getElementById('yesNoClear');
+    let yesNo = document.getElementById('yesNo');
+    let animalsGet = document.getElementById('animalsGet');
+    let animalsClear = document.getElementById('animalsClear');
+    let animals = document.getElementById('animals');
+
+    yesNoGet.addEventListener('click', function(){
+        let selection = Math.floor(Math.random() * yesNoList.length);
+        yesNo.innerText = yesNoList[selection];
+    });
+
+    yesNoClear.addEventListener('click', function(){
+        yesNo.innerText = '-----';
+    });
+
+    animalsGet.addEventListener('click', function(){
+        let selection = Math.floor(Math.random() * animalsList.length);
+        animals.innerText = animalsList[selection];
+    });
+
+    animalsClear.addEventListener('click', function(){
+        animals.innerText = '-----';
+    });
+  </script>
+</body>
+</html>
