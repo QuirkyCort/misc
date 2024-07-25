@@ -13,7 +13,7 @@ const getParameterDefinitions = () => {
     { name: 'type', type: 'choice', caption: 'Base type', values: ['SG90', 'MG995 A', 'MG995 B'], captions: ['SG90', 'MG995 A', 'MG995 B'], initial: 'SG90' },
     { name: 'swivelType', type: 'choice', caption: 'Swivel type', values: ['Horizontal', 'Vertical'], captions: ['Horizontal', 'Vertical'], initial: 'Horizontal' },
     { name: 'swivelHeight', type: 'float', initial: 20, step: 0.1, caption: 'Swivel Mount Height' },
-    { name: 'swivelOffset', type: 'float', initial: 9, step: 0.1, caption: 'Swivel Mount Offset (for Type 1 only)' },
+    { name: 'swivelOffset', type: 'float', initial: 9, step: 0.1, caption: 'Swivel Mount Offset (for Vertical only)' },
     { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
   ]
 }
