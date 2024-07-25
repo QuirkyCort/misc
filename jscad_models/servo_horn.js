@@ -12,7 +12,7 @@ const getParameterDefinitions = () => {
     { name: 'length1', type: 'int', initial: 1, caption: 'Number of Lego Holes Left' },
     { name: 'length2', type: 'int', initial: 2, caption: 'Number of Lego Holes Right' },
     { name: 'servoHole', type: 'float', initial: 1.5, caption: 'Diameter of servo screw holes' },
-    { name: 'type', type: 'choice', caption: 'Base type', values: ['SG90', 'MG995 A', 'MG995 B'], captions: ['SG90', 'MG995 A', 'MG995 B'], initial: 'SG90' },
+    { name: 'type', type: 'choice', caption: 'Servo horn type', values: ['SG90', 'MG995 A', 'MG995 B'], captions: ['SG90', 'MG995 A', 'MG995 B'], initial: 'SG90' },
     { name: 'orientation', type: 'choice', caption: 'Orientation', values: ['Straight', 'Cross'], captions: ['Straight', 'Cross'], initial: 'Straight' },
     { name: 'lastOnly', type: 'checkbox', checked: false, caption: 'Only last Lego hole' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
