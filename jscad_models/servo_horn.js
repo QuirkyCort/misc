@@ -49,7 +49,6 @@ const merge = (solids, holes) => {
 
 const SG90_BASE_LENGTH = 28;
 const MG995_BASE_LENGTH = 32;
-const BASE_LENGTH = 38;
 const FIRST_LEGO_HOLE_POS_A1 = 24;
 const FIRST_LEGO_HOLE_POS_A2 = 8;
 const FIRST_LEGO_HOLE_POS_B1 = 16;
@@ -83,11 +82,20 @@ const main = (params) => {
   }
 
   // Main Body
-  let leftLength = BASE_LENGTH / 2
+  let leftLength = 0;
+  let rightLength = 0;
+  if (orientation == 'Straight') {
+    if (type == 'SG90') {
+      leftLength = SG90_BASE_LENGTH / 2
+      rightLength = SG90_BASE_LENGTH / 2
+    } else if (type == 'MG995 A') {
+      leftLength = MG995_BASE_LENGTH / 2
+      rightLength = MG995_BASE_LENGTH / 2
+    }
+  }
   if (length1 > 0) {
     leftLength = firstLegoHolePos + length1 * 8 - 8;
   }
-  let rightLength = BASE_LENGTH / 2
   if (length2 > 0) {
     rightLength = firstLegoHolePos + length2 * 8 - 8;
   }
