@@ -1,11 +1,11 @@
 /**
- * Base for ESP32-Cam (Does not include adapter)
+ * Base for Camera (Does not include adapter)
  */
 
 const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid, polygon } = jscad.primitives
-const { rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 const { extrudeLinear } = require('@jscad/modeling').extrusions
 const { measureBoundingBox } = require('@jscad/modeling').measurements
 
@@ -15,6 +15,7 @@ const SWIVEL_LENGTH = 11;
 const getParameterDefinitions = () => {
   return [
     { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'], captions: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'], initial: 'A2' },
+    { name: 'tilt', type: 'checkbox', checked: false, caption: 'Tilt Swivel Mount' },
     { name: 'swivelHeight', type: 'float', initial: 26, step: 0.1, caption: 'Swivel Mount Height' },
     { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
@@ -73,13 +74,23 @@ const swivel = (params) => {
 
   const swivelHeight = params.swivelHeight
   const m3_hole = params.m3_hole;
+  const tilt = params.tilt;
 
   // Swivel mount
   solids.push(cuboid({size: [SWIVEL_THICKNESS, SWIVEL_LENGTH, swivelHeight], center: [0, 0, swivelHeight/2]}));
   solids.push(translate([0, 0, swivelHeight], rotateY(Math.PI/2, cylinder({radius: SWIVEL_LENGTH/2, height: SWIVEL_THICKNESS, segments: 32}))))
   holes.push(translate([0, 0, swivelHeight], rotateY(Math.PI/2, cylinder({radius: m3_hole/2, height: SWIVEL_THICKNESS, segments: 32}))))
 
-  return merge(solids, holes);
+  let merged = merge(solids, holes);
+
+  if (tilt) {
+    merged = rotateX(30/180*Math.PI, merged);
+    let trimBottom = cuboid({size: [100, 100, 100], center: [0, 0, -50]})
+    merged = merge([merged], [trimBottom])
+    merged = translate([0, 3, 0], merged)
+  }
+  
+  return merged;
 }
 
 const main = (params) => {
