@@ -1,0 +1,62 @@
+html {
+  overflow-x: hidden;
+}
+
+canvas { cursor: move; }
+
+.statusdiv {
+  width: 800px;
+  margin-bottom: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
+.warning {
+  color: red;
+}
+
+.parameters {
+  background: lightgrey;
+  border-radius: 1em;
+  padding: 1em;
+}
+
+.parameters h3 {
+  margin-top: 0;
+}
+
+.parameters td {
+  vertical-align: top;
+  position: relative;
+}
+
+.parameters textarea {
+  font: monospace;
+  height: 20em;
+  width: 45em;
+}
+
+.popup {
+  display: flex;
+  box-shadow: 10px 10px 10px grey;
+  z-index: 1;
+  visibility: hidden;
+  padding: 0.5em;
+  position: absolute;
+  bottom: 100%;
+  left: 0%;
+  background: white;
+  border: solid 1px black;
+  border-radius: 10px;
+}
+
+.popup.show {
+  visibility: visible;
+}
+
+#code {
+  height: 50em;
+  width: 50em;
+}

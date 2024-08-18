@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <script src="lib/three.min.js"></script>
+    <script src="lib/orbitcontrols.js"></script>
+    <!-- fallback if no WebGL -->
+    <script src="lib/projector.js"></script>
+    <script src="lib/canvasrenderer.js"></script>
+    <script src="lib/jquery-2.1.3.min.js"></script>
+    <script src="src/csg.js"></script>
+    <script src="src/threecsg.js"></script>
+    <script src="src/openjscad.js"></script>
+    <script src="src/formats.js"></script>
+
+    <link rel="stylesheet" href="openjscad.css" type="text/css">
+
+    <title>Lego Mindstorm Part Builder</title>
+
+    <script>
+      var gProcessor=null;
+
+      // Show all exceptions to the user:
+      OpenJsCad.AlertUserOfUncaughtExceptions();
+
+      function updateSolid() {
+        var code = 'var holeDiameter = ' + document.getElementById('holeDiameter').value + ";\n";
+        code += 'var holeStepDiameter = ' + document.getElementById('holeStepDiameter').value + ";\n";
+        code += 'var holeStepDepth = ' + document.getElementById('holeStepDepth').value + ";\n";
+        code += 'var partMap = `' + document.getElementById('partMap').value + "`;\n";
+        code += document.getElementById('code').value;
+
+        gProcessor.setJsCad(code);
+      }
+
+      function onload() {
+        gProcessor = new OpenJsCad.Processor(document.getElementById('viewer'));
+        updateSolid();
+      }
+
+      function explainHoleDiameter() {
+        var popup = document.getElementById('explainHoleDiameter');
+        popup.classList.toggle('show');
+      }
+
+      function explainHoleStepDiameter() {
+        var popup = document.getElementById('explainHoleStepDiameter');
+        popup.classList.toggle('show');
+      }
+
+      function explainPartMap() {
+        var popup = document.getElementById('explainPartMap');
+        popup.classList.toggle('show');
+      }
+
+      function toggleCode() {
+        document.getElementById('code').classList.toggle('hidden');
+      }
+
+    </script>
+  </head>
+
+
+  <body onload="onload()">
+    <h1>Lego Mindstorm Part Builder</h1>
+    <p>Based on <a href="http://joostn.github.io/OpenJsCad">OpenJsCad</a></p>
+    <p>
+      Building your EV3 robot, but can't find the right part to hold that sensor at the position you want?
+      Need to simplify a messy combination of parts into one single part?
+      This page will help you design your own custom part for 3D printing.
+    </p>
+    <p>
+      This part builder is only meant for simple parts.
+      For more complicated designs, use a (free) 3D modeller such as...
+      <ul>
+        <li><a href="https://www.sketchup.com/">SketchUp</a></li>
+        <li><a href="https://www.tinkercad.com/">Tinkercad</a></li>
+        <li><a href="https://www.freecadweb.org">FreeCAD</a></li>
+        <li><a href="https://openjscad.org/">OpenJSCAD.org</a> (Text based)</li>
+        <li><a href="http://www.openscad.org">OpenSCAD</a> (Text based)</li>
+      </ul>
+    </p>
+
+    <p class="warning">
+      WARNING!
+      Anything you enter will be lost as soon as this page is reloaded.
+      Copy and paste whatever you want to save onto your own computer.
+    </p>
+
+    <div id="viewer"></div>
+
+    <div class="parameters">
+      <h3>Design</h3>
+      <p class="warning">
+        Every 3D printer is slightly different.
+        Before printing a large design, print a small test piece and adjust "Hole Radius" and "Hole Step Radius" until it fits.
+      </p>
+      <table>
+        <tr>
+          <td>
+            Hole Diameter
+            <button onclick="explainHoleDiameter()">?</button>:
+            <div id="explainHoleDiameter" class="popup">
+              <img src="img/hole diameter.jpg">
+            </div>
+          </td>
+          <td><input id="holeDiameter" type="text" value="5"></td>
+        </tr>
+        <tr>
+          <td>
+            Hole Step Diameter
+            <button onclick="explainHoleStepDiameter()">?</button>:
+            <div id="explainHoleStepDiameter" class="popup">
+              <img src="img/step diameter.jpg">
+            </div>
+          </td>
+          <td><input id="holeStepDiameter" type="text" value="6.4"></td>
+        </tr>
+        <tr>
+          <td>
+            Hole Step Depth
+          </td>
+          <td><input id="holeStepDepth" type="text" value="0.8"></td>
+        </tr>
+        <tr>
+          <td>
+            Part Map
+            <button onclick="explainPartMap()">?</button>:
+            <div id="explainPartMap" class="popup">
+              <img src="img/part map.jpg">
+            </div>
+          </td>
+          <td>
+            <textarea id="partMap">
+# Lines beginning with a "#" are ignored
+# Every character (case sensitive!) represents one block.
+# Click the "?" on the left for details.
+YZX
+00B
+
+# Blank lines (...like the one above) indicates a new Z level.
+000
+00y
+            </textarea>
+          </td>
+        </tr>
+      </table>
+      <button onclick="updateSolid()">Update</button>
+      <button onclick="toggleCode()">Advanced Settings</button>
+    </div>
+
+    <textarea id="code" class="hidden">
+// Feel free to mess around with this.
+// If anything breaks, just reload the page and it'll return to normal.
+
+var holeRadius = holeDiameter/2;
+var holeStepRadius = holeStepDiameter/2;
+var base = 4;
+var resolution = 32;
+var axleWidth = 1.8;
+var axleLength = 4.8;
+var axleChamfer = 0.8;
+
+var VALID_BLOCKS = 'BXYZxyz';
+
+// Uncomment the next line to allow pin blocks (experimental).
+//var VALID_BLOCKS = 'BXYZxyzabc';
+
+var pinRadius = 2.1;
+var pinStepRadius = 2.4;
+var pinStepDepth = 0.5;
+
+function main() {
+  var rows = partMap.split(/\r?\n/);
+  var slices = [];
+  var slice = [];
+
+  for (var i=0; i<rows.length; i++) {
+    var row = rows[i].replace(/\s*$/,"");
+
+    if (row.length == 0) {
+      slices.push(slice);
+      slice = [];
+    } else {
+      row = row.replace(/#.*$/,"");
+      if (row.length != 0) {
+        slice.push(row);
+      }
+    }
+  }
+  slices.push(slice);
+
+  for (var z=0; z<slices.length; z++) {
+    var slice = slices[z];
+    for (var y=0; y<slice.length; y++) {
+      var row = slice[y];
+      for (var x=0; x<row.length; x++) {
+        if (row[x] == '#') {
+          break;
+        } else if (VALID_BLOCKS.indexOf(row[x]) == -1) {
+          continue;
+        }
+
+        if (typeof part == 'undefined') {
+          var part = placeBlock(row[x], [y,x,z])
+        } else {
+          part = part.union(placeBlock(row[x], [y,x,z]));
+        }
+      }
+    }
+  }
+
+  return part;
+}
+
+function placeBlock(type, position) {
+  if (type == 'B') {
+    var block = solidBlock();
+  } else if (type == 'X') {
+    var block = holeBlock().rotateX(90);
+  } else if (type == 'Y') {
+    var block = holeBlock().rotateY(90);
+  } else if (type == 'Z') {
+    var block = holeBlock();
+  } else if (type == 'x') {
+    var block = axleHoleBlock().rotateX(90);
+  } else if (type == 'y') {
+    var block = axleHoleBlock().rotateY(90);
+  } else if (type == 'z') {
+    var block = axleHoleBlock();
+  } else if (type == 'a') {
+    var block = pinBlock().rotateX(90);
+  } else if (type == 'b') {
+    var block = pinBlock().rotateY(90);
+  } else if (type == 'c') {
+    var block = pinBlock();
+  }
+
+  var translation = [
+    position[0] * base * 2,
+    position[1] * base * 2,
+    position[2] * base * 2
+  ];
+  return block.translate(translation);
+}
+
+function pinBlock() {
+  var body= CSG.cylinder({
+    start: [0, 0, -base],
+    end: [0, 0, base],
+    radius: pinRadius,
+    resolution: resolution
+  });
+  var pinStep1 = CSG.cylinder({
+    start: [0, 0, -base],
+    end: [0, 0, -base+pinStepDepth],
+    radius: pinStepRadius,
+    resolution: resolution
+  });
+  var pinStep2 = CSG.cylinder({
+    start: [0, 0, base],
+    end: [0, 0, base-pinStepDepth],
+    radius: pinStepRadius,
+    resolution: resolution
+  });
+  var split1 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [base+1, 0.5, base+1]
+  });
+  var split2 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [0.5, base+1, base+1]
+  });
+
+  return body
+    .union(pinStep1)
+    .union(pinStep2)
+    .subtract(split1)
+    .subtract(split2);
+}
+
+function holeBlock() {
+  var body = solidBlock();
+  var hole = CSG.cylinder({
+    start: [0, 0, -base-1],
+    end: [0, 0, base+1],
+    radius: holeRadius,
+    resolution: resolution
+  });
+  var holeStep1 = CSG.cylinder({
+    start: [0, 0, base-holeStepDepth],
+    end: [0, 0, base+1],
+    radius: holeStepRadius,
+    resolution: resolution
+  });
+  var holeStep2 = CSG.cylinder({
+    start: [0, 0, -base+holeStepDepth],
+    end: [0, 0, -base-1],
+    radius: holeStepRadius,
+    resolution: resolution
+  });
+
+  return body
+    .subtract(hole)
+    .subtract(holeStep1)
+    .subtract(holeStep2);
+}
+
+function axleHoleBlock() {
+  var body = solidBlock();
+  var axleHole1 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [axleWidth/2, axleLength/2, base+1]
+  });
+  var axleHole2 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [axleLength/2, axleWidth/2, base+1]
+  });
+  var chamfer1 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [axleChamfer/2, axleChamfer/2, base+1]
+  }).rotateZ(45)
+  .translate([axleWidth/2, axleWidth/2,0]);
+  var chamfer2 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [axleChamfer/2, axleChamfer/2, base+1]
+  }).rotateZ(45)
+  .translate([-axleWidth/2, axleWidth/2,0]);
+  var chamfer3 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [axleChamfer/2, axleChamfer/2, base+1]
+  }).rotateZ(45)
+  .translate([axleWidth/2, -axleWidth/2,0]);
+  var chamfer4 = CSG.cube({
+    center: [0, 0, 0],
+    radius: [axleChamfer/2, axleChamfer/2, base+1]
+  }).rotateZ(45)
+  .translate([-axleWidth/2, -axleWidth/2,0]);
+
+
+  return body
+    .subtract(axleHole1)
+    .subtract(axleHole2)
+    .subtract(chamfer1)
+    .subtract(chamfer2)
+    .subtract(chamfer3)
+    .subtract(chamfer4);
+}
+
+
+function solidBlock() {
+  return CSG.cube({
+    center: [0, 0, 0],
+    radius: [base, base, base]
+  });
+}
+    </textarea>
+  </body>
+</html>
