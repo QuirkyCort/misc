@@ -4,22 +4,23 @@
 
 const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
-const { rotateX, translate } = require('@jscad/modeling').transforms
+const { rotateX, rotateY, translate } = require('@jscad/modeling').transforms
 const { cylinder, cuboid } = jscad.primitives
 
 const MOUNTING_HOLES_DISTANCE = 13.2;
 const MARGIN = 3;
 const MOUNT_DEPTH = 7;
 const PROTRUSION_DEPTH = 1;
+const SWIVEL_THICKNESS = 4;
+const SWIVEL_HEIGHT = 11;
 
 const getParameterDefinitions = () => {
   return [
-    { name: 'height', type: 'float', initial: 10, caption: 'Height of mouting holes from base' },
+    { name: 'height', type: 'float', initial: 12, caption: 'Height of mouting holes from base' },
     { name: 'm2', type: 'float', initial: 1.8, caption: 'Diameter of M2 holes' },
-    { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'B1', 'B2'], captions: ['A1', 'A2', 'B1', 'B2'], initial: 'A1' },
-    { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
-    { name: 'legoOuterDia', type: 'float', initial: 6.2, caption: 'Lego: Outer diameter of hole' },
-    { name: 'legoHeight', type: 'float', initial: 0.8, caption: 'Lego: Height of outer diameter' },
+    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
+    { name: 'swivelXOffset', type: 'float', initial: 4, step: 0.1, caption: 'Swivel Mount X Offset' },
+    { name: 'swivelLength', type: 'float', initial: 12, step: 0.1, caption: 'Swivel Mount Length' },
   ]
 }
 
@@ -55,7 +56,9 @@ const main = (params) => {
 
   const height = params.height;
   const m2 = params.m2;
-  const type = params.type;
+  const swivelXOffset = params.swivelXOffset;
+  const swivelLength = params.swivelLength;
+  const m3_hole = params.m3_hole;
 
   const mountWidth = MOUNTING_HOLES_DISTANCE + MARGIN * 2;
   const mountHeight = height + MARGIN;
@@ -70,29 +73,10 @@ const main = (params) => {
   holes.push(translate([holes_offset, 0, height], rotateX(Math.PI/2, cylinder({radius: m2/2, height: 10, segments: 32}))))
   holes.push(translate([-holes_offset, 0, height], rotateX(Math.PI/2, cylinder({radius: m2/2, height: 10, segments: 32}))))
 
-  // Base
-  if (type == 'A1') {
-    solids.push(cuboid({size: [24, 16, 8], center: [0, 4.5, 4]}))
-  } else if (type == 'A2') {
-    solids.push(cuboid({size: [24, 24, 8], center: [0, 8.5, 4]}))
-  } else if (type == 'B1') {
-    solids.push(cuboid({size: [16, 16, 8], center: [0, 4.5, 4]}))
-  } else if (type == 'B2') {
-    solids.push(cuboid({size: [16, 24, 8], center: [0, 8.5, 4]}))
-  }
-
-  if (type == 'A1' || type == 'A2') {
-    for (let x=-1; x<=1; x++) {
-      for (let y=1; y<=2; y++) {
-        holes.push(legoHole(x*8, 0.5+y*8, 4, params))
-      }
-    }
-  } else if (type == 'B1' || type == 'B2') {
-    for (let y=1; y<=2; y++) {
-      holes.push(legoHole(-4, 0.5+y*8, 4, params))
-      holes.push(legoHole(4, 0.5+y*8, 4, params))
-    }
-  }
+  // Swivel
+  const swivelY = (MOUNT_DEPTH + swivelLength) / 2;
+  solids.push(cuboid({size: [SWIVEL_THICKNESS, swivelLength + SWIVEL_HEIGHT/2, SWIVEL_HEIGHT], center: [-swivelXOffset, swivelY, SWIVEL_HEIGHT/2]}))
+  holes.push(translate([-swivelXOffset, swivelLength, SWIVEL_HEIGHT/2], rotateY(Math.PI/2, cylinder({radius: m3_hole/2, height: SWIVEL_THICKNESS, segments: 32}))))
 
   return merge(solids, holes);
 }
