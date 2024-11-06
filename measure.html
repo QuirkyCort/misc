@@ -29,9 +29,25 @@
       width: 100%;
       height: 50vh;
       user-select: none;
+      flex-shrink: 0;
     }
     .scale.selected {
       background: lightgreen;
+    }
+    #controls {
+      display: flex;
+      flex-direction: column;
+    }
+    #recordings {
+      flex-grow: 1;
+      overflow: hidden;
+    }
+    #recordings.expand {
+      position: absolute;
+      background: white;
+      width: 100%;
+      height: 100%;
+      overflow: scroll;
     }
   </style>
 </head>
@@ -39,29 +55,40 @@
 <body>
   <canvas id="canvas"></canvas>
   <div id="controls">
-    <button id="fullscreen">Fullscreen</button><br>
-    <!-- <label>Pixel per mm: </label><input id="px_per_mm" type="number" value="20.591"><br> -->
-    <label>Screen width mm: </label><input id="screen_width" type="number" value="135"><br>
-    <label>Diameter: </label><input id="diameter" type="number" value="3" step="0.25">
-    <div>X: <span id="x">0</span></div>
-    <div>Y: <span id="y">0</span></div>
-    <button class="scale selected" data="1">1x</button>
-    <button class="scale" data="2">2x</button>
-    <button class="scale" data="10">10x</button><br>
-    <button id="zero">Set Zero</button>
+    <button id="fullscreen">Fullscreen</button>
+    <div>
+      <label>Screen width mm: </label><input id="screen_width" type="number" value="135">
+    </div>
+    <div>
+      <label>Diameter: </label><input id="diameter" type="number" value="3" step="0.25">
+    </div>
+    <div>X: <span id="x">0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Y: <span id="y">0</span></div>
+    <div>
+      <button class="scale selected" data="1">1x</button>
+      <button class="scale" data="2">2x</button>
+      <button class="scale" data="5">5x</button>
+    </div>
+    <div>
+      <button id="zero">Set Zero</button>
+      <button id="record">Record</button>
+      <button id="remove">Remove</button>
+    </div>
     <div id="touch"></div>
+    <div id="recordings"></div>
   </div>
   <script>
     const canvas = document.getElementById('canvas');
     const touchDiv = document.getElementById('touch');
     const fullscreenBtn = document.getElementById('fullscreen');
-    // const pxPerMmInput = document.getElementById('px_per_mm');
     const screenWidthInput = document.getElementById('screen_width');
     const diameterInput = document.getElementById('diameter');
     const xSpan = document.getElementById('x');
     const ySpan = document.getElementById('y');
     const widthSpan = document.getElementById('width');
     const zeroBtn = document.getElementById('zero');
+    const recordBtn = document.getElementById('record');
+    const removeBtn = document.getElementById('remove');
+    const recordingsDiv = document.getElementById('recordings');
 
     let cursorPosMM = [0, 0];
     let touchPos = [-1, -1];
@@ -69,6 +96,7 @@
     let scale = 1;
     let zero = [0, 0];
     let diameter = 0;
+    let recordings = [];
 
     function adjustCanvasSize() {
       canvas.width = canvas.offsetWidth;
@@ -76,8 +104,44 @@
     }
 
     function clearCanvas() {
-      let ctx = canvas.getContext("2d");
+      let ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawCanvas() {
+      clearCanvas();
+      drawCursorMm();
+      drawRecordsOnCanvas();
+    }
+
+    function drawRecordsOnCanvas() {
+      for (let i=0; i<recordings.length; i++) {
+        drawMarker(i);
+      }
+    }
+
+    function drawMarker(index) {
+      let record = recordings[index];
+      let pX = record[0] * pxPerMm / window.devicePixelRatio;
+      let pY = record[1] * pxPerMm / window.devicePixelRatio;
+      let pRadius = diameter / 2 * pxPerMm / window.devicePixelRatio;
+
+      pY = canvas.height - pY;
+
+      let ctx = canvas.getContext('2d');
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'red';
+
+      ctx.font = '15px sans-serif';
+      ctx.fillText(index, pX + pRadius, pY + pRadius);
+
+      ctx.beginPath();
+      ctx.moveTo(pX, pY - pRadius);
+      ctx.lineTo(pX, pY + pRadius);
+      ctx.moveTo(pX - pRadius, pY);
+      ctx.lineTo(pX + pRadius, pY);
+      ctx.arc(pX, pY, pRadius, 0, 2 * Math.PI);
+      ctx.stroke();
     }
 
     function drawCursorMm() {
@@ -87,13 +151,13 @@
 
       pY = canvas.height - pY;
 
-      clearCanvas();
       drawCursorPx(pX, pY, pRadius)
     }
 
     function drawCursorPx(x, y, radius) {
-      let ctx = canvas.getContext("2d");
+      let ctx = canvas.getContext('2d');
       ctx.lineWidth = 1;
+      ctx.strokeStyle = 'black';
 
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -137,7 +201,7 @@
         cursorPosMM[1] = Math.min(cursorPosMM[1], canvas.height / pxPerMm * window.devicePixelRatio);
 
         updateSpans();
-        drawCursorMm()
+        drawCanvas();
       }
       saveTouch(e);
     }
@@ -153,7 +217,7 @@
 
     function updateDiameter() {
       diameter = Number(diameterInput.value);
-      drawCursorMm();
+      drawCanvas();
     }
 
     function changeScale(e) {
@@ -168,6 +232,7 @@
       zero[0] = cursorPosMM[0];
       zero[1] = cursorPosMM[1];
       updateSpans();
+      drawRecords();
     }
 
     function fullscreen() {
@@ -178,13 +243,49 @@
       }
     }
 
-    // function updateWidth() {
-    //   widthSpan.innerText = document.children[0].offsetWidth * window.devicePixelRatio;
-    // }
-
     function updateScreenWidth() {
       const pWidth = document.children[0].offsetWidth * window.devicePixelRatio;
       pxPerMm = pWidth / Number(screenWidthInput.value);
+    }
+
+    function addRecord() {
+      recordings.push([...cursorPosMM]);
+      drawRecords();
+      drawCanvas();
+    }
+
+    function removeRecord() {
+      recordings.pop();
+      drawRecords();
+      drawCanvas();
+    }
+
+    function getRecordDiv(index) {
+      let record = recordings[index];
+      let template = document.createElement('template');
+      template.innerHTML =
+        '<div> ' +
+        index +
+        ') x: ' +
+        (Math.round((record[0] - zero[0]) * 100) / 100) +
+        ', y: ' +
+        (Math.round((record[1] - zero[1]) * 100) / 100) +
+        '<div>';
+
+      return template.content.firstChild;
+    }
+
+    function drawRecords() {
+      recordingsDiv.innerHTML = '';
+      for (let i=0; i<recordings.length; i++) {
+        let recordDiv = getRecordDiv(i);
+        recordingsDiv.append(recordDiv);
+      }
+      recordingsDiv.scrollTop = recordingsDiv.scrollHeight
+    }
+
+    function expandRecordings() {
+      recordingsDiv.classList.toggle('expand');
     }
 
     touchDiv.addEventListener('touchstart', saveTouch);
@@ -194,17 +295,16 @@
       e.addEventListener('click', changeScale);
     }
     zeroBtn.addEventListener('click', setZero);
-    // pxPerMmInput.addEventListener('change', updatePxPerMm);
     screenWidthInput.addEventListener('change', updateScreenWidth)
     diameterInput.addEventListener('change', updateDiameter);
     fullscreenBtn.addEventListener('click', fullscreen);
-
+    recordBtn.addEventListener('click', addRecord);
+    removeBtn.addEventListener('click', removeRecord);
+    recordingsDiv.addEventListener('click', expandRecordings);
 
     adjustCanvasSize();
-    // updatePxPerMm();
     updateScreenWidth()
     updateDiameter();
-    // updateWidth();
   </script>
 </body>
 </html>
