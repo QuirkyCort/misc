@@ -57,7 +57,8 @@
   <div id="controls">
     <button id="fullscreen">Fullscreen</button>
     <div>
-      <label>Screen width mm: </label><input id="screen_width" type="number" value="135">
+      <label>Screen width mm: </label><input id="screen_width" type="number" value="135"><br>
+      <label>Screen height mm: </label><input id="screen_height" type="number" value="70">
     </div>
     <div>
       <label>Diameter: </label><input id="diameter" type="number" value="3" step="0.25">
@@ -81,10 +82,10 @@
     const touchDiv = document.getElementById('touch');
     const fullscreenBtn = document.getElementById('fullscreen');
     const screenWidthInput = document.getElementById('screen_width');
+    const screenHeightInput = document.getElementById('screen_height');
     const diameterInput = document.getElementById('diameter');
     const xSpan = document.getElementById('x');
     const ySpan = document.getElementById('y');
-    const widthSpan = document.getElementById('width');
     const zeroBtn = document.getElementById('zero');
     const recordBtn = document.getElementById('record');
     const removeBtn = document.getElementById('remove');
@@ -92,7 +93,8 @@
 
     let cursorPosMM = [0, 0];
     let touchPos = [-1, -1];
-    let pxPerMm = 0;
+    let pxPerMmWidth = 0;
+    let pxPerMmHeight = 0;
     let scale = 1;
     let zero = [0, 0];
     let diameter = 0;
@@ -122,9 +124,9 @@
 
     function drawMarker(index) {
       let record = recordings[index];
-      let pX = record[0] * pxPerMm / window.devicePixelRatio;
-      let pY = record[1] * pxPerMm / window.devicePixelRatio;
-      let pRadius = diameter / 2 * pxPerMm / window.devicePixelRatio;
+      let pX = record[0] * pxPerMmWidth / window.devicePixelRatio;
+      let pY = record[1] * pxPerMmHeight / window.devicePixelRatio;
+      let pRadius = diameter / 2 * pxPerMmWidth / window.devicePixelRatio;
 
       pY = canvas.height - pY;
 
@@ -145,9 +147,9 @@
     }
 
     function drawCursorMm() {
-      let pX = cursorPosMM[0] * pxPerMm / window.devicePixelRatio;
-      let pY = cursorPosMM[1] * pxPerMm / window.devicePixelRatio;
-      let pRadius = diameter / 2 * pxPerMm / window.devicePixelRatio;
+      let pX = cursorPosMM[0] * pxPerMmWidth / window.devicePixelRatio;
+      let pY = cursorPosMM[1] * pxPerMmHeight / window.devicePixelRatio;
+      let pRadius = diameter / 2 * pxPerMmWidth / window.devicePixelRatio;
 
       pY = canvas.height - pY;
 
@@ -185,8 +187,8 @@
         dx *= window.devicePixelRatio;
         dy *= window.devicePixelRatio;
 
-        dx /= pxPerMm;
-        dy /= pxPerMm;
+        dx /= pxPerMmWidth;
+        dy /= pxPerMmHeight;
 
         dx /= scale;
         dy /= scale;
@@ -197,8 +199,8 @@
         cursorPosMM[0] = Math.max(cursorPosMM[0], 0);
         cursorPosMM[1] = Math.max(cursorPosMM[1], 0);
 
-        cursorPosMM[0] = Math.min(cursorPosMM[0], canvas.width / pxPerMm * window.devicePixelRatio);
-        cursorPosMM[1] = Math.min(cursorPosMM[1], canvas.height / pxPerMm * window.devicePixelRatio);
+        cursorPosMM[0] = Math.min(cursorPosMM[0], canvas.width / pxPerMmWidth * window.devicePixelRatio);
+        cursorPosMM[1] = Math.min(cursorPosMM[1], canvas.height / pxPerMmHeight * window.devicePixelRatio);
 
         updateSpans();
         drawCanvas();
@@ -209,10 +211,6 @@
     function updateSpans() {
       xSpan.innerText = Math.round((cursorPosMM[0] - zero[0]) * 100) / 100;
       ySpan.innerText = Math.round((cursorPosMM[1] - zero[1]) * 100) / 100;
-    }
-
-    function updatePxPerMm() {
-      pxPerMm = Number(pxPerMmInput.value);
     }
 
     function updateDiameter() {
@@ -245,7 +243,12 @@
 
     function updateScreenWidth() {
       const pWidth = document.children[0].offsetWidth * window.devicePixelRatio;
-      pxPerMm = pWidth / Number(screenWidthInput.value);
+      pxPerMmWidth = pWidth / Number(screenWidthInput.value);
+    }
+
+    function updateScreenHeight() {
+      const pHeight = document.children[0].offsetHeight * window.devicePixelRatio;
+      pxPerMmHeight = pHeight / Number(screenHeightInput.value);
     }
 
     function addRecord() {
@@ -296,6 +299,7 @@
     }
     zeroBtn.addEventListener('click', setZero);
     screenWidthInput.addEventListener('change', updateScreenWidth)
+    screenHeightInput.addEventListener('change', updateScreenHeight)
     diameterInput.addEventListener('change', updateDiameter);
     fullscreenBtn.addEventListener('click', fullscreen);
     recordBtn.addEventListener('click', addRecord);
@@ -303,7 +307,8 @@
     recordingsDiv.addEventListener('click', expandRecordings);
 
     adjustCanvasSize();
-    updateScreenWidth()
+    updateScreenWidth();
+    updateScreenHeight();
     updateDiameter();
   </script>
 </body>
