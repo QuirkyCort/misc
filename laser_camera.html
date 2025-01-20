@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Laser Cutter Camera</title>
+  <style>
+    body {
+      height: 100vh;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 8px;
+    }
+    #image {
+      display: none;
+    }
+    #canvasLayers {
+      flex-grow: 1;
+      position: relative;
+      height: 100%;
+      overflow-y: scroll;
+    }
+    #canvas1, #overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    #row {
+      display: flex;
+      height: 100%;
+    }
+    #controls {
+      width: 10em;
+    }
+    input {
+      width: 4em;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="row">
+    <div id="canvasLayers">
+      <canvas id="canvas1"></canvas>
+      <canvas id="overlay"></canvas>
+    </div>
+    <div id="controls">
+      <button id="run">run</button><br>
+      <span id="pos"></span><br>
+      Fx: <input type="number" id="Fx" value="0.19"><br>
+      Fy: <input type="number" id="Fy" value="0.4"><br>
+      P0: <input type="number" id="P0x" value="0"><input type="number" id="P0y" value="0"><br>
+      P1: <input type="number" id="P1x" value="400"><input type="number" id="P1y" value="0"><br>
+      P2: <input type="number" id="P2x" value="0"><input type="number" id="P2y" value="400"><br>
+      P3: <input type="number" id="P3x" value="400"><input type="number" id="P3y" value="400"><br>
+    </div>
+  </div>
+
+  <img id="image" src="IMG1.jpg">
+
+
+  <script>
+    const canvas1 = document.getElementById('canvas1');
+    const overlay = document.getElementById('overlay');
+    const pos = document.getElementById('pos');
+    const image = document.getElementById('image');
+    const runBtn = document.getElementById('run');
+
+    const WIDTH = 400;
+    const HEIGHT = 400;
+    const PIXEL_PER_MM = 3;
+    const PIXEL_WIDTH = PIXEL_PER_MM * WIDTH;
+    const PIXEL_HEIGHT = PIXEL_PER_MM * HEIGHT;
+
+    canvas1.width = PIXEL_WIDTH;
+    canvas1.height = PIXEL_HEIGHT;
+    overlay.width = PIXEL_WIDTH;
+    overlay.height = PIXEL_HEIGHT;
+
+    function run() {
+      const width = image.width;
+      const height = image.height;
+      const ctx1 = canvas1.getContext('2d');
+      const canvas2 = new OffscreenCanvas(width, height);
+      const ctx2 = canvas2.getContext('2d');
+      ctx2.drawImage(image, 0, 0);
+
+      const Fx = parseFloat(document.getElementById('Fx').value);
+      const Fy = parseFloat(document.getElementById('Fy').value);
+
+      const sourceImageData = ctx2.getImageData(0, 0, width, height);
+      const sourceData = sourceImageData.data;
+      const destImageData = ctx1.createImageData(PIXEL_WIDTH, PIXEL_HEIGHT);
+      const destData = destImageData.data;
+
+      for (let y=0; y<PIXEL_HEIGHT; y++) {
+        let dy = (y - PIXEL_HEIGHT / 2) / (PIXEL_HEIGHT / 2);
+        for (let x=0; x<PIXEL_WIDTH; x++) {
+          let dx = (x - PIXEL_WIDTH / 2) / (PIXEL_WIDTH / 2);
+          let sx = dx + dy ** 2 * dx * - Fx;
+          let sy = dy + dx ** 2 * dy * - Fy;
+          let spx = Math.floor(sx * width / 2 + width / 2);
+          let spy = Math.floor(sy * height / 2 + height / 2);
+
+          for (let i=0; i<4; i++) {
+            destData[(y * PIXEL_WIDTH + x) * 4 + i] = sourceData[(spy * width + spx) * 4 + i];
+          }
+        }
+      }
+      ctx1.putImageData(destImageData, 0, 0);
+    }
+
+    function mouseMove(event) {
+      let ctx = overlay.getContext("2d");
+      const bounding = overlay.getBoundingClientRect();
+      let x = Math.floor(event.clientX - bounding.left);
+      let y = Math.floor(event.clientY - bounding.top);
+
+      x = x / overlay.clientWidth * overlay.width;
+      y = y / overlay.clientHeight * overlay.height;
+
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(overlay.width, y);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, overlay.height);
+      ctx.strokeStyle = '#8888';
+      ctx.stroke();
+
+      pos.textContent = Math.round(x / PIXEL_PER_MM) + ', ' + (WIDTH - Math.round(y / PIXEL_PER_MM));
+    }
+
+    runBtn.addEventListener('click', run);
+    overlay.addEventListener('mousemove', mouseMove);
+  </script>
+</body>
+</html>
