@@ -20,21 +20,23 @@
       flex-grow: 1;
       position: relative;
       height: 100%;
-      overflow-y: scroll;
+      overflow: auto;
     }
     #canvas1, #overlay {
       position: absolute;
       left: 0;
       top: 0;
+      cursor: none;
+      user-select: none;
     }
     #row {
       display: flex;
       height: 100%;
     }
     #controls {
-      width: 10em;
+      width: 12em;
     }
-    input {
+    input[type="number"], input[type="text"] {
       width: 4em;
     }
   </style>
@@ -47,39 +49,151 @@
       <canvas id="overlay"></canvas>
     </div>
     <div id="controls">
-      <button id="run">run</button><br>
-      <span id="pos"></span><br>
-      Fx: <input type="number" id="Fx" value="0.19"><br>
-      Fy: <input type="number" id="Fy" value="0.4"><br>
-      P0: <input type="number" id="P0x" value="0"><input type="number" id="P0y" value="0"><br>
-      P1: <input type="number" id="P1x" value="400"><input type="number" id="P1y" value="0"><br>
-      P2: <input type="number" id="P2x" value="0"><input type="number" id="P2y" value="400"><br>
-      P3: <input type="number" id="P3x" value="400"><input type="number" id="P3y" value="400"><br>
+      Image URL: <input type="text" id="imageUrl" value="http://laser2:9000/?action=snapshot"><br>
+      <button id="load">Load</button><br>
+      Px per mm: <input type="number" id="pxPerMm" value="2" step="1" min="1"><br>
+      FOV Correction: <input type="checkbox" id="fovCorrection" checked><br>
+      Fx: <input type="number" id="Fx" value="0.19" step="0.002"><br>
+      Fy: <input type="number" id="Fy" value="0.4" step="0.002"><br>
+      Projection Transform: <input type="checkbox" id="projectionTransform" checked><br>
+      P0: <input type="text" id="P0d" value="98,35"><input type="text" id="P0s" value="0,0"><br>
+      P1: <input type="text" id="P1d" value="304,36"><input type="text" id="P1s" value="400,0"><br>
+      P2: <input type="text" id="P2d" value="99,313"><input type="text" id="P2s" value="0,400"><br>
+      P3: <input type="text" id="P3d" value="305,314"><input type="text" id="P3s" value="400,400"><br>
     </div>
   </div>
 
-  <img id="image" src="IMG1.jpg">
-
+  <img id="image" src="http://laser2:9000/?action=snapshot">
 
   <script>
     const canvas1 = document.getElementById('canvas1');
     const overlay = document.getElementById('overlay');
-    const pos = document.getElementById('pos');
     const image = document.getElementById('image');
-    const runBtn = document.getElementById('run');
+    const loadBtn = document.getElementById('load');
+    const pxPerMm = document.getElementById('pxPerMm');
 
     const WIDTH = 400;
     const HEIGHT = 400;
-    const PIXEL_PER_MM = 3;
-    const PIXEL_WIDTH = PIXEL_PER_MM * WIDTH;
-    const PIXEL_HEIGHT = PIXEL_PER_MM * HEIGHT;
+    let PIXEL_PER_MM;
+    let PIXEL_WIDTH;
+    let PIXEL_HEIGHT;
 
-    canvas1.width = PIXEL_WIDTH;
-    canvas1.height = PIXEL_HEIGHT;
-    overlay.width = PIXEL_WIDTH;
-    overlay.height = PIXEL_HEIGHT;
+    function initCanvas() {
+      PIXEL_PER_MM = parseInt(pxPerMm.value);
+      PIXEL_WIDTH = PIXEL_PER_MM * WIDTH;
+      PIXEL_HEIGHT = PIXEL_PER_MM * HEIGHT;
+      canvas1.width = PIXEL_WIDTH;
+      canvas1.height = PIXEL_HEIGHT;
+      overlay.width = PIXEL_WIDTH;
+      overlay.height = PIXEL_HEIGHT;
+    }
 
-    function run() {
+    function gaussianElimination(A, b) {
+      let n = b.length;
+      for (let i=0; i<n; i++) {
+        let maxEl = Math.abs(A[i][i]);
+        let maxRow = i;
+        for (let k=i+1; k<n; k++) {
+          if (Math.abs(A[k][i]) > maxEl) {
+            maxEl = Math.abs(A[k][i]);
+            maxRow = k;
+          }
+        }
+        for (let k=i; k<n+1; k++) {
+          let tmp = A[maxRow][k];
+          A[maxRow][k] = A[i][k];
+          A[i][k] = tmp;
+        }
+        let tmp = b[maxRow];
+        b[maxRow] = b[i];
+        b[i] = tmp;
+
+        for (let k=i+1; k<n; k++) {
+          let c = -A[k][i] / A[i][i];
+          for (let j=i; j<n+1; j++) {
+            if (i === j) {
+              A[k][j] = 0;
+            } else {
+              A[k][j] += c * A[i][j];
+            }
+          }
+          b[k] += c * b[i];
+        }
+      }
+
+      let x = new Array(n);
+      for (let i=n-1; i>-1; i--) {
+        x[i] = b[i] / A[i][i];
+        for (let k=i-1; k>-1; k--) {
+          b[k] -= A[k][i] * x[i];
+        }
+      }
+      return x;
+    }
+
+    function getTransform() {
+      function parseAndMul(x) {
+        return parseFloat(x) * PIXEL_PER_MM;
+      }
+
+      const P0s = document.getElementById('P0s').value.split(',').map(parseAndMul);
+      const P1s = document.getElementById('P1s').value.split(',').map(parseAndMul);
+      const P2s = document.getElementById('P2s').value.split(',').map(parseAndMul);
+      const P3s = document.getElementById('P3s').value.split(',').map(parseAndMul);
+      const P0d = document.getElementById('P0d').value.split(',').map(parseAndMul);
+      const P1d = document.getElementById('P1d').value.split(',').map(parseAndMul);
+      const P2d = document.getElementById('P2d').value.split(',').map(parseAndMul);
+      const P3d = document.getElementById('P3d').value.split(',').map(parseAndMul);
+
+      P0s[1] = PIXEL_HEIGHT - P0s[1];
+      P1s[1] = PIXEL_HEIGHT - P1s[1];
+      P2s[1] = PIXEL_HEIGHT - P2s[1];
+      P3s[1] = PIXEL_HEIGHT - P3s[1];
+      P0d[1] = PIXEL_HEIGHT - P0d[1];
+      P1d[1] = PIXEL_HEIGHT - P1d[1];
+      P2d[1] = PIXEL_HEIGHT - P2d[1];
+      P3d[1] = PIXEL_HEIGHT - P3d[1];
+
+      const A = [
+        [P0s[0], P0s[1], 1, 0, 0, 0, -P0d[0] * P0s[0], -P0d[0] * P0s[1]],
+        [0, 0, 0, P0s[0], P0s[1], 1, -P0d[1] * P0s[0], -P0d[1] * P0s[1]],
+        [P1s[0], P1s[1], 1, 0, 0, 0, -P1d[0] * P1s[0], -P1d[0] * P1s[1]],
+        [0, 0, 0, P1s[0], P1s[1], 1, -P1d[1] * P1s[0], -P1d[1] * P1s[1]],
+        [P2s[0], P2s[1], 1, 0, 0, 0, -P2d[0] * P2s[0], -P2d[0] * P2s[1]],
+        [0, 0, 0, P2s[0], P2s[1], 1, -P2d[1] * P2s[0], -P2d[1] * P2s[1]],
+        [P3s[0], P3s[1], 1, 0, 0, 0, -P3d[0] * P3s[0], -P3d[0] * P3s[1]],
+        [0, 0, 0, P3s[0], P3s[1], 1, -P3d[1] * P3s[0], -P3d[1] * P3s[1]]
+      ];
+      const b = [
+        P0d[0], P0d[1], P1d[0], P1d[1], P2d[0], P2d[1], P3d[0], P3d[1]
+      ];
+
+      const x = gaussianElimination(A, b);
+
+      return [
+        [x[0], x[1], x[2]],
+        [x[3], x[4], x[5]],
+        [x[6], x[7], 1]
+      ];
+    }
+
+    function matrixMul(a, b) {
+      let c = new Array(a.length);
+      for (let i=0; i<a.length; i++) {
+        c[i] = 0;
+        for (let k=0; k<a[0].length; k++) {
+          c[i] += a[i][k] * b[k];
+        }
+      }
+      return c;
+    }
+
+    function load() {
+      image.src = document.getElementById('imageUrl').value;
+    }
+
+    function processImage() {
+      initCanvas();
       const width = image.width;
       const height = image.height;
       const ctx1 = canvas1.getContext('2d');
@@ -87,18 +201,37 @@
       const ctx2 = canvas2.getContext('2d');
       ctx2.drawImage(image, 0, 0);
 
-      const Fx = parseFloat(document.getElementById('Fx').value);
-      const Fy = parseFloat(document.getElementById('Fy').value);
+      let Fx = 0;
+      let Fy = 0;
+      if (document.getElementById('fovCorrection').checked) {
+        Fx = parseFloat(document.getElementById('Fx').value);
+        Fy = parseFloat(document.getElementById('Fy').value);
+      }
+      const performTransform = document.getElementById('projectionTransform').checked;
 
       const sourceImageData = ctx2.getImageData(0, 0, width, height);
       const sourceData = sourceImageData.data;
       const destImageData = ctx1.createImageData(PIXEL_WIDTH, PIXEL_HEIGHT);
       const destData = destImageData.data;
 
+      const projectionTransform = getTransform();
+
       for (let y=0; y<PIXEL_HEIGHT; y++) {
-        let dy = (y - PIXEL_HEIGHT / 2) / (PIXEL_HEIGHT / 2);
         for (let x=0; x<PIXEL_WIDTH; x++) {
-          let dx = (x - PIXEL_WIDTH / 2) / (PIXEL_WIDTH / 2);
+          // Projection transform
+          let destPixel = matrixMul(projectionTransform, [x, y, 1]);
+          let dx = x;
+          let dy = y;
+          if (performTransform) {
+            dx = destPixel[0] / destPixel[2];
+            dy = destPixel[1] / destPixel[2];
+          }
+
+          // Normalize coordinates
+          dx = (dx - PIXEL_WIDTH / 2) / (PIXEL_WIDTH / 2);
+          dy = (dy - PIXEL_HEIGHT / 2) / (PIXEL_HEIGHT / 2);
+
+          // FOV correction
           let sx = dx + dy ** 2 * dx * - Fx;
           let sy = dy + dx ** 2 * dy * - Fy;
           let spx = Math.floor(sx * width / 2 + width / 2);
@@ -112,6 +245,81 @@
       ctx1.putImageData(destImageData, 0, 0);
     }
 
+    let mouseState = 0;
+    let startX = 0;
+    let startY = 0;
+    let endX = 0;
+    let endY = 0;
+
+    function drawBoxStart() {
+      let x = startX;
+      let y = startY;
+      let ctx = overlay.getContext("2d");
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(overlay.width, y);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, overlay.height);
+      ctx.strokeStyle = '#0f08';
+      ctx.stroke();
+
+      let pos = 'x:' + Math.round(x / PIXEL_PER_MM) + ', y:' + (HEIGHT - Math.round(y / PIXEL_PER_MM));
+      let size = ctx.measureText(pos);
+      let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
+      let width = size.width;
+      ctx.fillStyle = '#fff8';
+      ctx.fillRect(x - 6 - width, y - 6 - height, width + 4, height + 4);
+      ctx.fillStyle = '#000';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(pos, x - 4 - width, y - 4);
+    }
+
+    function drawBoxEnd() {
+      let x = endX;
+      let y = endY;
+      let ctx = overlay.getContext("2d");
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(overlay.width, y);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, overlay.height);
+      ctx.strokeStyle = '#f008';
+      ctx.stroke();
+
+      let pos = 'w:' + Math.round((x - startX) / PIXEL_PER_MM) + ', h:' + Math.round((startY - y) / PIXEL_PER_MM);
+      let size = ctx.measureText(pos);
+      let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
+      let width = size.width;
+      ctx.fillStyle = '#fff8';
+      ctx.fillRect(x - 6 - width, y - 6 - height, width + 4, height + 4);
+      ctx.fillStyle = '#000';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(pos, x - 4 - width, y - 4);
+      pos.textContent = pos;
+    }
+
+    function drawCross(x, y) {
+      let ctx = overlay.getContext("2d");
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(overlay.width, y);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, overlay.height);
+      ctx.strokeStyle = '#00f8';
+      ctx.stroke();
+
+      let pos = 'w:' + Math.round(x / PIXEL_PER_MM) + ', h:' + (HEIGHT - Math.round(y / PIXEL_PER_MM));
+      let size = ctx.measureText(pos);
+      let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
+      let width = size.width;
+      ctx.fillStyle = '#fff8';
+      ctx.fillRect(x - 6 - width, y - 6 - height, width + 4, height + 4);
+      ctx.fillStyle = '#000';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(pos, x - 4 - width, y - 4);
+      pos.textContent = pos;
+    }
+
     function mouseMove(event) {
       let ctx = overlay.getContext("2d");
       const bounding = overlay.getBoundingClientRect();
@@ -121,20 +329,37 @@
       x = x / overlay.clientWidth * overlay.width;
       y = y / overlay.clientHeight * overlay.height;
 
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(overlay.width, y);
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, overlay.height);
-      ctx.strokeStyle = '#8888';
-      ctx.stroke();
-
-      pos.textContent = Math.round(x / PIXEL_PER_MM) + ', ' + (WIDTH - Math.round(y / PIXEL_PER_MM));
+      if (mouseState == 0) {
+        startX = x;
+        startY = y;
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        drawBoxStart();
+      } else if (mouseState == 1) {
+        endX = x;
+        endY = y;
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        drawBoxStart();
+        drawBoxEnd();
+      } else {
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
+        drawBoxStart();
+        drawBoxEnd();
+        drawCross(x, y);
+      }
     }
 
-    runBtn.addEventListener('click', run);
+    function mouseClick(event) {
+      mouseState += 1;
+      if (mouseState == 3) {
+        mouseState = 0;
+      }
+    }
+
+    initCanvas();
+    loadBtn.addEventListener('click', load);
     overlay.addEventListener('mousemove', mouseMove);
+    overlay.addEventListener('click', mouseClick);
+    image.addEventListener('load', processImage);
   </script>
 </body>
 </html>
