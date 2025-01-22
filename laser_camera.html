@@ -308,7 +308,7 @@
       ctx.strokeStyle = '#00f8';
       ctx.stroke();
 
-      let pos = 'w:' + Math.round(x / PIXEL_PER_MM) + ', h:' + (HEIGHT - Math.round(y / PIXEL_PER_MM));
+      let pos = 'x:' + Math.round(x / PIXEL_PER_MM) + ', y:' + (HEIGHT - Math.round(y / PIXEL_PER_MM));
       let size = ctx.measureText(pos);
       let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
       let width = size.width;
