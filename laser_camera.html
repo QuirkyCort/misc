@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Laser Cutter Camera</title>
+  <title>Webcam</title>
   <style>
     body {
       height: 100vh;
@@ -49,27 +49,45 @@
       <canvas id="overlay"></canvas>
     </div>
     <div id="controls">
-      Image URL: <input type="text" id="imageUrl" value="http://laser2:9000/?action=snapshot"><br>
-      <button id="load">Load</button><br>
+      Image URL: <input type="text" id="imageUrl" value="http://laser2:5000/webcam_image"><br>
+      <button id="load">Load</button>
+      <button id="process">Process</button><br>
       Px per mm: <input type="number" id="pxPerMm" value="2" step="1" min="1"><br>
       FOV Correction: <input type="checkbox" id="fovCorrection" checked><br>
       Fx: <input type="number" id="Fx" value="0.19" step="0.002"><br>
-      Fy: <input type="number" id="Fy" value="0.4" step="0.002"><br>
+      Fy: <input type="number" id="Fy" value="0.35" step="0.002"><br>
       Projection Transform: <input type="checkbox" id="projectionTransform" checked><br>
-      P0: <input type="text" id="P0d" value="98,35"><input type="text" id="P0s" value="0,0"><br>
+      <!-- P0: <input type="text" id="P0d" value="98,35"><input type="text" id="P0s" value="0,0"><br>
       P1: <input type="text" id="P1d" value="304,36"><input type="text" id="P1s" value="400,0"><br>
       P2: <input type="text" id="P2d" value="99,313"><input type="text" id="P2s" value="0,400"><br>
-      P3: <input type="text" id="P3d" value="305,314"><input type="text" id="P3s" value="400,400"><br>
+      P3: <input type="text" id="P3d" value="305,314"><input type="text" id="P3s" value="400,400"><br> -->
+      P0: <input type="text" id="p0" value="102,42"><br>
+      P1: <input type="text" id="p1" value="165.8,42"><br>
+      P2: <input type="text" id="p2" value="236.2,41.5"><br>
+      P3: <input type="text" id="p3" value="299.5,40.2"><br>
+      P4: <input type="text" id="p4" value="101.5,117.2"><br>
+      P5: <input type="text" id="p5" value="165,115"><br>
+      P6: <input type="text" id="p6" value="238,114.5"><br>
+      P7: <input type="text" id="p7" value="300.5,115.2"><br>
+      P8: <input type="text" id="p8" value="101.5,211.2"><br>
+      P9: <input type="text" id="p9" value="164.8,210.2"><br>
+      P10: <input type="text" id="p10" value="239,209.7"><br>
+      P11: <input type="text" id="p11" value="301.3,209.2"><br>
+      P12: <input type="text" id="p12" value="101,304"><br>
+      P13: <input type="text" id="p13" value="165,304"><br>
+      P14: <input type="text" id="p14" value="238.5,303.5"><br>
+      P15: <input type="text" id="p15" value="301.8,302.5"><br>
     </div>
   </div>
 
-  <img id="image" src="http://laser2:9000/?action=snapshot">
+  <img id="image" src="" crossorigin="anonymous">
 
   <script>
     const canvas1 = document.getElementById('canvas1');
     const overlay = document.getElementById('overlay');
     const image = document.getElementById('image');
     const loadBtn = document.getElementById('load');
+    const processBtn = document.getElementById('process');
     const pxPerMm = document.getElementById('pxPerMm');
 
     const WIDTH = 400;
@@ -77,6 +95,25 @@
     let PIXEL_PER_MM;
     let PIXEL_WIDTH;
     let PIXEL_HEIGHT;
+
+    const Q = [
+      [5,5],
+      [135,5],
+      [265,5],
+      [395,5],
+      [5,135],
+      [135,135],
+      [265,135],
+      [395,135],
+      [5,265],
+      [135,265],
+      [265,265],
+      [395,265],
+      [5,395],
+      [135,395],
+      [265,395],
+      [395,395]
+    ];
 
     function initCanvas() {
       PIXEL_PER_MM = parseInt(pxPerMm.value);
@@ -131,41 +168,50 @@
       return x;
     }
 
-    function getTransform() {
-      function parseAndMul(x) {
-        return parseFloat(x) * PIXEL_PER_MM;
+    function getTransforms() {
+      function parse(i) {
+        let strings = document.getElementById('p' + i).value.split(',');
+        return [parseFloat(strings[0]) * PIXEL_PER_MM, (HEIGHT - parseFloat(strings[1])) * PIXEL_PER_MM];
       }
 
-      const P0s = document.getElementById('P0s').value.split(',').map(parseAndMul);
-      const P1s = document.getElementById('P1s').value.split(',').map(parseAndMul);
-      const P2s = document.getElementById('P2s').value.split(',').map(parseAndMul);
-      const P3s = document.getElementById('P3s').value.split(',').map(parseAndMul);
-      const P0d = document.getElementById('P0d').value.split(',').map(parseAndMul);
-      const P1d = document.getElementById('P1d').value.split(',').map(parseAndMul);
-      const P2d = document.getElementById('P2d').value.split(',').map(parseAndMul);
-      const P3d = document.getElementById('P3d').value.split(',').map(parseAndMul);
+      let p = [];
+      for (let i=0; i<16; i++) {
+        p.push(parse(i));
+      }
 
-      P0s[1] = PIXEL_HEIGHT - P0s[1];
-      P1s[1] = PIXEL_HEIGHT - P1s[1];
-      P2s[1] = PIXEL_HEIGHT - P2s[1];
-      P3s[1] = PIXEL_HEIGHT - P3s[1];
-      P0d[1] = PIXEL_HEIGHT - P0d[1];
-      P1d[1] = PIXEL_HEIGHT - P1d[1];
-      P2d[1] = PIXEL_HEIGHT - P2d[1];
-      P3d[1] = PIXEL_HEIGHT - P3d[1];
+      let q = [];
+      for (let i=0; i<Q.length; i++) {
+        q.push([
+          Q[i][0] * PIXEL_PER_MM,
+          (HEIGHT - Q[i][1]) * PIXEL_PER_MM
+        ]);
+      }
 
+      let transforms = [];
+      for (let y=0; y<3; y++) {
+        for (let x=0; x<3; x++) {
+          transforms.push(getTransform(
+            [q[y*4 + x], q[y*4 + x+1], q[y*4 + x+4], q[y*4 + x+5]],
+            [p[y*4 + x], p[y*4 + x+1], p[y*4 + x+4], p[y*4 + x+5]]
+          ));
+        }
+      }
+      return transforms;
+    }
+
+    function getTransform(p, q) {
       const A = [
-        [P0s[0], P0s[1], 1, 0, 0, 0, -P0d[0] * P0s[0], -P0d[0] * P0s[1]],
-        [0, 0, 0, P0s[0], P0s[1], 1, -P0d[1] * P0s[0], -P0d[1] * P0s[1]],
-        [P1s[0], P1s[1], 1, 0, 0, 0, -P1d[0] * P1s[0], -P1d[0] * P1s[1]],
-        [0, 0, 0, P1s[0], P1s[1], 1, -P1d[1] * P1s[0], -P1d[1] * P1s[1]],
-        [P2s[0], P2s[1], 1, 0, 0, 0, -P2d[0] * P2s[0], -P2d[0] * P2s[1]],
-        [0, 0, 0, P2s[0], P2s[1], 1, -P2d[1] * P2s[0], -P2d[1] * P2s[1]],
-        [P3s[0], P3s[1], 1, 0, 0, 0, -P3d[0] * P3s[0], -P3d[0] * P3s[1]],
-        [0, 0, 0, P3s[0], P3s[1], 1, -P3d[1] * P3s[0], -P3d[1] * P3s[1]]
+        [p[0][0], p[0][1], 1, 0, 0, 0, -q[0][0] * p[0][0], -q[0][0] * p[0][1]],
+        [0, 0, 0, p[0][0], p[0][1], 1, -q[0][1] * p[0][0], -q[0][1] * p[0][1]],
+        [p[1][0], p[1][1], 1, 0, 0, 0, -q[1][0] * p[1][0], -q[1][0] * p[1][1]],
+        [0, 0, 0, p[1][0], p[1][1], 1, -q[1][1] * p[1][0], -q[1][1] * p[1][1]],
+        [p[2][0], p[2][1], 1, 0, 0, 0, -q[2][0] * p[2][0], -q[2][0] * p[2][1]],
+        [0, 0, 0, p[2][0], p[2][1], 1, -q[2][1] * p[2][0], -q[2][1] * p[2][1]],
+        [p[3][0], p[3][1], 1, 0, 0, 0, -q[3][0] * p[3][0], -q[3][0] * p[3][1]],
+        [0, 0, 0, p[3][0], p[3][1], 1, -q[3][1] * p[3][0], -q[3][1] * p[3][1]]
       ];
       const b = [
-        P0d[0], P0d[1], P1d[0], P1d[1], P2d[0], P2d[1], P3d[0], P3d[1]
+        q[0][0], q[0][1], q[1][0], q[1][1], q[2][0], q[2][1], q[3][0], q[3][1]
       ];
 
       const x = gaussianElimination(A, b);
@@ -189,7 +235,27 @@
     }
 
     function load() {
-      image.src = document.getElementById('imageUrl').value;
+      image.src = document.getElementById('imageUrl').value + '?' + new Date().getTime();
+    }
+
+    function projectionTransform(transforms, x, y) {
+      let tx = 0;
+      let ty = 2;
+
+      if (y > Q[8][1] * PIXEL_PER_MM) {
+        ty = 0;
+      } else if (y > Q[4][1] * PIXEL_PER_MM) {
+        ty = 1;
+      }
+      if (x > Q[2][0] * PIXEL_PER_MM) {
+        tx = 2;
+      } else if (x > Q[1][0] * PIXEL_PER_MM) {
+        tx = 1;
+      }
+
+      let transform = transforms[ty * 3 + tx];
+      let destPixel = matrixMul(transform, [x, y, 1]);
+      return [destPixel[0] / destPixel[2], destPixel[1] / destPixel[2]];
     }
 
     function processImage() {
@@ -214,17 +280,21 @@
       const destImageData = ctx1.createImageData(PIXEL_WIDTH, PIXEL_HEIGHT);
       const destData = destImageData.data;
 
-      const projectionTransform = getTransform();
+      let transforms;
+      if (performTransform) {
+        transforms = getTransforms();
+      }
 
       for (let y=0; y<PIXEL_HEIGHT; y++) {
         for (let x=0; x<PIXEL_WIDTH; x++) {
-          // Projection transform
-          let destPixel = matrixMul(projectionTransform, [x, y, 1]);
           let dx = x;
           let dy = y;
+
+          // Projection transform
           if (performTransform) {
-            dx = destPixel[0] / destPixel[2];
-            dy = destPixel[1] / destPixel[2];
+            let dxdy = projectionTransform(transforms, x, y);
+            dx = dxdy[0];
+            dy = dxdy[1];
           }
 
           // Normalize coordinates
@@ -267,11 +337,20 @@
       let size = ctx.measureText(pos);
       let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
       let width = size.width;
+      let xPos = x - 6 - width;
+      let yPos = y - 4;
+      if (xPos < 0) {
+        xPos = x + 4;
+      }
+      if (yPos - height < 0) {
+        yPos = y + height + 4;
+      }
+
       ctx.fillStyle = '#fff8';
-      ctx.fillRect(x - 6 - width, y - 6 - height, width + 4, height + 4);
+      ctx.fillRect(xPos - 2, yPos - 2 - height, width + 4, height + 4);
       ctx.fillStyle = '#000';
       ctx.font = '12px sans-serif';
-      ctx.fillText(pos, x - 4 - width, y - 4);
+      ctx.fillText(pos, xPos, yPos);
     }
 
     function drawBoxEnd() {
@@ -290,12 +369,20 @@
       let size = ctx.measureText(pos);
       let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
       let width = size.width;
+      let xPos = x - 6 - width;
+      let yPos = y - 4;
+      if (xPos < 0) {
+        xPos = x + 4;
+      }
+      if (yPos - height < 0) {
+        yPos = y + height + 4;
+      }
+
       ctx.fillStyle = '#fff8';
-      ctx.fillRect(x - 6 - width, y - 6 - height, width + 4, height + 4);
+      ctx.fillRect(xPos - 2, yPos - 2 - height, width + 4, height + 4);
       ctx.fillStyle = '#000';
       ctx.font = '12px sans-serif';
-      ctx.fillText(pos, x - 4 - width, y - 4);
-      pos.textContent = pos;
+      ctx.fillText(pos, xPos, yPos);
     }
 
     function drawCross(x, y) {
@@ -312,12 +399,20 @@
       let size = ctx.measureText(pos);
       let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
       let width = size.width;
+      let xPos = x - 6 - width;
+      let yPos = y - 4;
+      if (xPos < 0) {
+        xPos = x + 4;
+      }
+      if (yPos - height < 0) {
+        yPos = y + height + 4;
+      }
+
       ctx.fillStyle = '#fff8';
-      ctx.fillRect(x - 6 - width, y - 6 - height, width + 4, height + 4);
+      ctx.fillRect(xPos - 2, yPos - 2 - height, width + 4, height + 4);
       ctx.fillStyle = '#000';
       ctx.font = '12px sans-serif';
-      ctx.fillText(pos, x - 4 - width, y - 4);
-      pos.textContent = pos;
+      ctx.fillText(pos, xPos, yPos);
     }
 
     function mouseMove(event) {
@@ -357,6 +452,7 @@
 
     initCanvas();
     loadBtn.addEventListener('click', load);
+    processBtn.addEventListener('click', processImage);
     overlay.addEventListener('mousemove', mouseMove);
     overlay.addEventListener('click', mouseClick);
     image.addEventListener('load', processImage);
