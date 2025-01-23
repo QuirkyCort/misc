@@ -384,6 +384,8 @@
       let x = endX;
       let y = endY;
       let ctx = overlay.getContext("2d");
+      ctx.fillStyle = '#ff05';
+      ctx.fillRect(startX, startY, x - startX, y - startY);
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(overlay.width, y);
