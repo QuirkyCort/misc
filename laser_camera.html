@@ -39,6 +39,31 @@
     input[type="number"], input[type="text"] {
       width: 4em;
     }
+    @keyframes animateColors {
+      0% {background-color: #ff8888;}
+      50% {background-color: #888888;}
+      100% {background-color: #ff8888;}
+    }
+    #notice {
+      position: absolute;
+      margin-top: auto;
+      left: 0;
+      right: 0;
+      top: 40vh;
+      margin-inline: auto;
+      max-width: fit-content;
+      background: #ff8888;
+      animation-name: animateColors;
+      animation-duration: 1.5s;
+      animation-iteration-count: infinite;
+      padding: 1em;
+      border-radius: 1em;
+      font-size: 200%;
+      border: solid 0.2em lightgray;
+    }
+    #notice:empty {
+      display: none;
+    }
   </style>
 </head>
 
@@ -57,10 +82,6 @@
       Fx: <input type="number" id="Fx" value="0.19" step="0.002"><br>
       Fy: <input type="number" id="Fy" value="0.35" step="0.002"><br>
       Projection Transform: <input type="checkbox" id="projectionTransform" checked><br>
-      <!-- P0: <input type="text" id="P0d" value="98,35"><input type="text" id="P0s" value="0,0"><br>
-      P1: <input type="text" id="P1d" value="304,36"><input type="text" id="P1s" value="400,0"><br>
-      P2: <input type="text" id="P2d" value="99,313"><input type="text" id="P2s" value="0,400"><br>
-      P3: <input type="text" id="P3d" value="305,314"><input type="text" id="P3s" value="400,400"><br> -->
       P0: <input type="text" id="p0" value="102,42"><br>
       P1: <input type="text" id="p1" value="165.8,42"><br>
       P2: <input type="text" id="p2" value="236.2,41.5"><br>
@@ -80,6 +101,8 @@
     </div>
   </div>
 
+  <div id="notice"></div>
+
   <img id="image" src="" crossorigin="anonymous">
 
   <script>
@@ -89,6 +112,7 @@
     const loadBtn = document.getElementById('load');
     const processBtn = document.getElementById('process');
     const pxPerMm = document.getElementById('pxPerMm');
+    const notice = document.getElementById('notice');
 
     const WIDTH = 400;
     const HEIGHT = 400;
@@ -235,6 +259,7 @@
     }
 
     function load() {
+      notice.textContent = 'Loading...';
       image.src = document.getElementById('imageUrl').value + '?' + new Date().getTime();
     }
 
@@ -259,6 +284,7 @@
     }
 
     function processImage() {
+      notice.textContent = 'Processing...';
       initCanvas();
       const width = image.width;
       const height = image.height;
@@ -313,6 +339,7 @@
         }
       }
       ctx1.putImageData(destImageData, 0, 0);
+      notice.textContent = '';
     }
 
     let mouseState = 0;
@@ -385,44 +412,11 @@
       ctx.fillText(pos, xPos, yPos);
     }
 
-    function drawCross(x, y) {
-      let ctx = overlay.getContext("2d");
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(overlay.width, y);
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, overlay.height);
-      ctx.strokeStyle = '#00f8';
-      ctx.stroke();
-
-      let pos = 'x:' + Math.round(x / PIXEL_PER_MM) + ', y:' + (HEIGHT - Math.round(y / PIXEL_PER_MM));
-      let size = ctx.measureText(pos);
-      let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
-      let width = size.width;
-      let xPos = x - 6 - width;
-      let yPos = y - 4;
-      if (xPos < 0) {
-        xPos = x + 4;
-      }
-      if (yPos - height < 0) {
-        yPos = y + height + 4;
-      }
-
-      ctx.fillStyle = '#fff8';
-      ctx.fillRect(xPos - 2, yPos - 2 - height, width + 4, height + 4);
-      ctx.fillStyle = '#000';
-      ctx.font = '12px sans-serif';
-      ctx.fillText(pos, xPos, yPos);
-    }
-
     function mouseMove(event) {
       let ctx = overlay.getContext("2d");
       const bounding = overlay.getBoundingClientRect();
-      let x = Math.floor(event.clientX - bounding.left);
-      let y = Math.floor(event.clientY - bounding.top);
-
-      x = x / overlay.clientWidth * overlay.width;
-      y = y / overlay.clientHeight * overlay.height;
+      const x = Math.floor((event.clientX - bounding.left) / overlay.clientWidth * overlay.width);
+      const y = Math.floor((event.clientY - bounding.top) / overlay.clientHeight * overlay.height);
 
       if (mouseState == 0) {
         startX = x;
@@ -435,18 +429,57 @@
         ctx.clearRect(0, 0, overlay.width, overlay.height);
         drawBoxStart();
         drawBoxEnd();
-      } else {
+      } else if (mouseState == 2) {
+        if (inBox(x, y)) {
+          overlay.style.cursor = 'grab';
+        } else {
+          overlay.style.cursor = 'crosshair';
+        }
+      } else if (mouseState == 3) {
+        startX += event.movementX;
+        startY += event.movementY;
+        endX += event.movementX;
+        endY += event.movementY;
         ctx.clearRect(0, 0, overlay.width, overlay.height);
         drawBoxStart();
         drawBoxEnd();
-        drawCross(x, y);
       }
     }
 
-    function mouseClick(event) {
-      mouseState += 1;
+    function inBox(x, y) {
+      let x0 = Math.min(startX, endX);
+      let x1 = Math.max(startX, endX);
+      let y0 = Math.min(startY, endY);
+      let y1 = Math.max(startY, endY);
+      return x >= x0 && x <= x1 && y >= y0 && y <= y1;
+    }
+
+    function mouseDown(event) {
+      if (mouseState == 0) {
+        overlay.style.cursor = 'none';
+        mouseState = 1;
+      } else if (mouseState == 1) {
+        overlay.style.cursor = 'grab';
+        mouseState = 2;
+      } else if (mouseState == 2) {
+        const bounding = overlay.getBoundingClientRect();
+        const x = Math.floor((event.clientX - bounding.left) / overlay.clientWidth * overlay.width);
+        const y = Math.floor((event.clientY - bounding.top) / overlay.clientHeight * overlay.height);
+
+        if (inBox(x, y)) {
+          overlay.style.cursor = 'grabbing';
+          mouseState = 3;
+        } else {
+          overlay.style.cursor = 'none';
+          mouseState = 0;
+        }
+      }
+    }
+
+    function mouseUp(event) {
       if (mouseState == 3) {
-        mouseState = 0;
+        overlay.style.cursor = 'grab';
+        mouseState = 2;
       }
     }
 
@@ -454,7 +487,8 @@
     loadBtn.addEventListener('click', load);
     processBtn.addEventListener('click', processImage);
     overlay.addEventListener('mousemove', mouseMove);
-    overlay.addEventListener('click', mouseClick);
+    overlay.addEventListener('mousedown', mouseDown);
+    overlay.addEventListener('mouseup', mouseUp);
     image.addEventListener('load', processImage);
   </script>
 </body>
