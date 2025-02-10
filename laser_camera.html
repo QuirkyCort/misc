@@ -79,25 +79,26 @@
       <button id="process">Process</button><br>
       Px per mm: <input type="number" id="pxPerMm" value="2" step="1" min="1"><br>
       FOV Correction: <input type="checkbox" id="fovCorrection" checked><br>
-      Fx: <input type="number" id="Fx" value="0.19" step="0.002"><br>
-      Fy: <input type="number" id="Fy" value="0.35" step="0.002"><br>
+      Fx: <input type="number" id="Fx" value="0.01" step="0.002"><br>
+      Fy: <input type="number" id="Fy" value="0.16" step="0.002"><br>
+      K1: <input type="number" id="K1" value="0.2" step="0.002"><br>
       Projection Transform: <input type="checkbox" id="projectionTransform" checked><br>
-      P0: <input type="text" id="p0" value="102,42"><br>
-      P1: <input type="text" id="p1" value="165.8,42"><br>
-      P2: <input type="text" id="p2" value="236.2,41.5"><br>
-      P3: <input type="text" id="p3" value="299.5,40.2"><br>
-      P4: <input type="text" id="p4" value="101.5,117.2"><br>
-      P5: <input type="text" id="p5" value="165,115"><br>
-      P6: <input type="text" id="p6" value="238,114.5"><br>
-      P7: <input type="text" id="p7" value="300.5,115.2"><br>
-      P8: <input type="text" id="p8" value="101.5,211.2"><br>
-      P9: <input type="text" id="p9" value="164.8,210.2"><br>
-      P10: <input type="text" id="p10" value="239,209.7"><br>
-      P11: <input type="text" id="p11" value="301.3,209.2"><br>
-      P12: <input type="text" id="p12" value="101,304"><br>
-      P13: <input type="text" id="p13" value="165,304"><br>
-      P14: <input type="text" id="p14" value="238.5,303.5"><br>
-      P15: <input type="text" id="p15" value="301.8,302.5"><br>
+      P0: <input type="text" id="p0" value="89.5,5.5"><br>
+      P1: <input type="text" id="p1" value="161.8,3.7"><br>
+      P2: <input type="text" id="p2" value="240.3,3.2"><br>
+      P3: <input type="text" id="p3" value="312.5,3.5"><br>
+      P4: <input type="text" id="p4" value="88.8,107.2"><br>
+      P5: <input type="text" id="p5" value="162,106"><br>
+      P6: <input type="text" id="p6" value="240.8,105.2"><br>
+      P7: <input type="text" id="p7" value="313.5,104.7"><br>
+      P8: <input type="text" id="p8" value="88.8,212,2"><br>
+      P9: <input type="text" id="p9" value="163,210.5"><br>
+      P10: <input type="text" id="p10" value="240.3,210"><br>
+      P11: <input type="text" id="p11" value="314.3,210"><br>
+      P12: <input type="text" id="p12" value="87.8,319"><br>
+      P13: <input type="text" id="p13" value="162,318"><br>
+      P14: <input type="text" id="p14" value="242,317.5"><br>
+      P15: <input type="text" id="p15" value="315.5,317"><br>
     </div>
   </div>
 
@@ -295,9 +296,11 @@
 
       let Fx = 0;
       let Fy = 0;
+      let K1 = 0;
       if (document.getElementById('fovCorrection').checked) {
         Fx = parseFloat(document.getElementById('Fx').value);
         Fy = parseFloat(document.getElementById('Fy').value);
+        K1 = parseFloat(document.getElementById('K1').value);
       }
       const performTransform = document.getElementById('projectionTransform').checked;
 
@@ -328,8 +331,13 @@
           dy = (dy - PIXEL_HEIGHT / 2) / (PIXEL_HEIGHT / 2);
 
           // FOV correction
+          // let r = Math.sqrt(dx ** 2 + dy ** 2);
           let sx = dx + dy ** 2 * dx * - Fx;
           let sy = dy + dx ** 2 * dy * - Fy;
+          let r = Math.sqrt(sx ** 2 + sy ** 2);
+          let sr = r - K1 * r ** 2;
+          sx = sx * sr / r;
+          sy = sy * sr / r;
           let spx = Math.floor(sx * width / 2 + width / 2);
           let spy = Math.floor(sy * height / 2 + height / 2);
 
@@ -360,7 +368,7 @@
       ctx.strokeStyle = '#0f08';
       ctx.stroke();
 
-      let pos = 'x:' + Math.round(x / PIXEL_PER_MM) + ', y:' + (HEIGHT - Math.round(y / PIXEL_PER_MM));
+      let pos = 'x:' + Math.round(x / PIXEL_PER_MM * 10) + ', y:' + (HEIGHT * 10 - Math.round(y / PIXEL_PER_MM * 10));
       let size = ctx.measureText(pos);
       let height = size.actualBoundingBoxAscent + size.actualBoundingBoxDescent;
       let width = size.width;
