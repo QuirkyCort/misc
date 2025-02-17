@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Drill 2 Gcode</title>
+  <style>
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Drill file to Gcode converter</h1>
+    <p>Input file must be in the Excellon format</p>
+  </header>
+
+  <main>
+    <input type="file" id="drillFile" accept=".drl">
+    <p>Plunge depth: <input type="text" id="plungeDepth" value="2"> mm</p>
+    <p>Plunge speed: <input type="text" id="plungeSpeed" value="60"> mm/min</p>
+    <p>Retract Z: <input type="text" id="retractZ" value="1"> mm</p>
+    <p>Top Left X: <input type="text" id="refX" value="38.1"> Y: <input type="text" id="refY" value="43.18"></p>
+    <p>Layers <button id="all">All</button> <button id="none">None</button></p>
+    <ul id="layers"></ul>
+    <button id="generate">Generate Gcode</button>
+  </main>
+
+  <script>
+    let drillFile = document.getElementById('drillFile');
+    let layersAll = document.getElementById('all');
+    let layersNone = document.getElementById('none');
+    let generate = document.getElementById('generate');
+    let excellonLines;
+    let excellonData = {
+        tools: [],
+        drillPos: []
+    }
+
+    drillFile.addEventListener('change', loadFile);
+    layersAll.addEventListener('click', selectAllLayers);
+    layersNone.addEventListener('click', unselectAllLayers);
+    generate.addEventListener('click', generateGcode);
+
+    function readParameters() {
+        let params = {
+            plungeDepth: parseFloat(document.getElementById('plungeDepth').value),
+            plungeSpeed: parseFloat(document.getElementById('plungeSpeed').value),
+            retractZ: parseFloat(document.getElementById('retractZ').value),
+            refX: parseFloat(document.getElementById('refX').value),
+            refY: parseFloat(document.getElementById('refY').value),
+            layers: {}
+        }
+
+        let selected = document.querySelectorAll('#layers > li > input');
+        for (let i = 0; i < selected.length; i++) {
+            params.layers[i + 1] = selected[i].checked;
+        }
+
+        return params;
+    }
+
+    function generateHeader(params) {
+        let gcode = '';
+
+        gcode += 'G21\n';   // Set units to mm
+        gcode += 'G90\n';   // Set absolute positioning
+        gcode += 'M4 S0\n'; // Enable Laser/Spindle (0 power)
+        gcode += '\n'
+        return gcode;
+    }
+
+    function generatePre(params) {
+        let gcode = '';
+
+        gcode += 'G0 Z' + params.retractZ + '\n'; // Retract Z
+        return gcode;
+    }
+
+    function generateDrill(params) {
+        let gcode = '';
+
+        for (let pos of excellonData.drillPos) {
+            if (params.layers[pos.tool]) {
+                let x = pos.x - params.refX;
+                let y = pos.y - params.refY;
+                gcode += 'G0 X' + x + ' Y' + y + '\n'; // Move to position
+                gcode += 'G1 Z-' + params.plungeDepth + ' F' + params.plungeSpeed + '\n'; // Plunge
+                gcode += 'G0 Z' + params.retractZ + '\n'; // Retract Z
+            }
+        }
+
+        return gcode;
+    }
+
+    function generatePost(params) {
+        let gcode = '';
+
+        gcode += 'M5\n'; // Disable Laser/Spindle
+        return gcode;
+    }
+
+    function generateGcode() {
+        let params = readParameters();
+        let gcode = generateHeader(params);
+        gcode += generatePre(params);
+        gcode += generateDrill(params);
+        gcode += generatePost(params);
+        saveToFile('drill.gcode', gcode);
+    }
+
+    function saveToFile(filename, gcode) {
+        let blob = new Blob([gcode], {type: 'text/plain'});
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+    }
+
+    function selectAllLayers() {
+        document.querySelectorAll('#layers > li > input').forEach(e => e.checked = true)
+    }
+
+    function unselectAllLayers() {
+        document.querySelectorAll('#layers > li > input').forEach(e => e.checked = false)
+    }
+
+    async function loadFile() {
+        const curFiles = drillFile.files;
+        if (curFiles.length === 0) {
+            console.log('No files selected');
+            return;
+        }
+
+        const fileData = await curFiles[0].text();
+        excellonLines = fileData.split('\n');
+        parseHeader();
+        parsePositions();
+        drawLayers();
+    }
+
+    function drawLayers() {
+        let layers = document.getElementById('layers');
+        layers.innerHTML = '';
+        for (let tool of excellonData.tools) {
+            let li = document.createElement('li');
+            li.innerHTML = '<input type="checkbox" id="layer' + tool[0] +'"> Tool ' + tool[0] + ' (' + tool[1] +' mm)';
+            layers.appendChild(li);
+        }
+    }
+
+    function parsePositions() {
+        let state = 'searching for positions';
+        let currentTool = 0;
+        for (let line of excellonLines) {
+            if (state === 'searching for positions') {
+                if (line.startsWith('%')) {
+                    state = 'positions';
+                }
+            } else if (state === 'positions') {
+                if (line.startsWith('T')) {
+                    currentTool = parseInt(line.substring(1));
+                } else if (line.startsWith('X')) {
+                    let pos = line.substring(1).split('Y');
+                    let x = parseFloat(pos[0]);
+                    let y = parseFloat(pos[1]);
+                    excellonData.drillPos.push({
+                        x: x,
+                        y: y,
+                        tool: currentTool
+                    });
+                }
+            }
+        }
+    }
+
+    function parseHeader() {
+        let state = 'searching for header';
+        for (let line of excellonLines) {
+            if (state === 'searching for header') {
+                if (line.startsWith('M48')) {
+                    state = 'header';
+                }
+            } else if (state === 'header') {
+                if (line.startsWith('%')) {
+                    return
+                } else if (line.startsWith('T')) {
+                    let tool = line.substring(1).split('C');
+                    excellonData.tools.push([
+                        parseInt(tool[0]),
+                        parseFloat(tool[1])
+                    ]);
+
+                }
+            }
+        }
+    }
+  </script>
+</body>
+</html>
