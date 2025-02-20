@@ -15,6 +15,9 @@ Size measurement tools. Defaults are for a Pixel 3XL.
 ## [Drill to Gcode](https://github.com/QuirkyCort/misc/drill_to_gcode.html)
 Generate Gcode from an Excellon drill file.
 
+## [SVG Reorder](https://github.com/QuirkyCort/misc/svg_reorder.html)
+Reorders SVG elements for laser cutting.
+
 ## [Machine Vision Tools](https://github.com/QuirkyCort/misc/tree/main/machine_vision)
 Tools to support the "Machine Vision" extension in [IoTy](https://quirkycort.github.io/IoTy/public/editor.html).
 

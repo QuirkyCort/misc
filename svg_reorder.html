@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" src="paperjs/paper-full.min.0.12.17.js"></script>
+</head>
+<body>
+    <input type="checkbox" id="groupConnected" checked> Group connected<br>
+    <select id="groupBy">
+        <option value="2">Group inner to outer</option>
+        <option value="1">Group by object</option>
+    </select><br>
+    Set stroke to <input type="text" id="strokeWidth" value="0.2" style="width: 3em;"> mm<br>
+    <input type="checkbox" id="allBlack"> Set all strokes to black<br>
+    <input type="file" id="importSVG" accept=".svg"><br>
+    <button id="exportSVG">Export SVG</button><br>
+	<canvas id="myCanvas" width="100" height="100" style="max-width: 90vw;"></canvas>
+    <template id="svgTemplate"></template>
+
+    <script type="text/javascript">
+        let exportSVGBtn = document.getElementById('exportSVG');
+        let groupConnectedCheckbox = document.getElementById('groupConnected');
+        let groupBySelect = document.getElementById('groupBy');
+        let strokeWidth = document.getElementById('strokeWidth');
+        let allBlackCheckbox = document.getElementById('allBlack');
+
+        exportSVGBtn.addEventListener('click', exportSVG);
+        importSVG.addEventListener('change', loadFile);
+        groupConnectedCheckbox.addEventListener('change', load);
+        groupBySelect.addEventListener('change', load);
+        strokeWidth.addEventListener('change', load);
+        allBlackCheckbox.addEventListener('change', load);
+
+        let SCALE_MM = 96/25.4;
+
+        let viewBoxWidth, viewBoxHeight;
+        let svgWidth, svgHeight;
+        let fileData;
+
+        function exportSVG() {
+            let svg = paper.project.exportSVG({
+                asString: true,
+                bounds: 'content'
+            });
+            let blob = new Blob([svg], { type: 'image/svg+xml' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'reGrouped.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        function getColor(i) {
+            const colors = ['black', 'red', 'green', 'blue'];
+            return colors[i % colors.length];
+        }
+
+        function groupConnected() {
+            let processed = [];
+            let items = paper.project.getItems({ recursive: true });
+            items = items.filter(item => item.segments);
+            for (let item of items) {
+                processed.push(item);
+                let group = [item];
+                let head = item.segments[0];
+                let tail = item.segments[item.segments.length - 1];
+
+                if (segmentEqual(head, tail)) {
+                    continue; // Closed loop
+                }
+                while (true) {
+                    let added = false;
+                    for (let item2 of items) {
+                        if (group.includes(item2) || processed.includes(item2)) {
+                            continue; // Already handled
+                        }
+                        let head2 = item2.segments[0];
+                        let tail2 = item2.segments[item2.segments.length - 1];
+                        if (segmentEqual(head, head2)) {
+                            item2.clockwise = !item2.clockwise;
+                            group.unshift(item2);
+                            processed.push(item2);
+                            head = tail2;
+                            added = true;
+                        } else if (segmentEqual(head, tail2)) {
+                            group.unshift(item2);
+                            processed.push(item2);
+                            head = head2;
+                            added = true;
+                        } else if (segmentEqual(tail, head2)) {
+                            group.push(item2);
+                            processed.push(item2);
+                            tail = tail2;
+                            added = true;
+                        } else if (segmentEqual(tail, tail2)) {
+                            item2.clockwise = !item2.clockwise;
+                            group.push(item2);
+                            processed.push(item2);
+                            tail = head2;
+                            added = true;
+                        }
+                    }
+                    if (!added) {
+                        break;
+                    }
+                }
+                if (group.length > 1) {
+                    let p = new paper.Path();
+                    for (let item2 of group) {
+                        p.addSegments(item2.segments);
+                        item2.remove();
+                    }
+                    // let compound = new paper.CompoundPath({
+                    //     children: group
+                    // });
+                    // compound.reorient();
+                }
+            }
+        }
+
+        function segmentEqual(a, b) {
+            const THRESHOLD = 0.001;
+            return Math.abs(a.point.x - b.point.x) < THRESHOLD && Math.abs(a.point.y - b.point.y) < THRESHOLD;
+        }
+
+        function ungroupAll() {
+            while (true) {
+                let ungrouped = false;
+                let items = paper.project.getItems({ recursive: true });
+                for (let item of items) {
+                    if (item instanceof paper.Group) {
+                        if (item.parent) {
+                            item.parent.insertChildren(item.index,  item.removeChildren());
+                            item.remove();
+                            ungrouped = true;
+                            break
+                        }
+                    }
+                }
+                if (!ungrouped) {
+                    break;
+                }
+            }
+        }
+
+        function generateOuters() {
+            let maxOuterCount = 0;
+            let items = paper.project.getItems({ recursive: true })[0].children;
+            for (let item of items) {
+                item.outers = [];
+                item.outerCount = 0;
+                let refPoint;
+                if (item.firstSegment) { // Fixme: segments is not reliable
+                    refPoint = item.firstSegment.point;
+                } else {
+                    // refPoint = item.position;
+                    continue;
+                }
+                for (let item2 of items) {
+                    if (item2.firstSegment) { // Fixme: segments is not reliable
+                        if (item2.contains(refPoint) && item2 !== item) {
+                            item.outers.push(item2);
+                            item.outerCount++;
+                            if (item.outerCount > maxOuterCount) {
+                                maxOuterCount = item.outerCount;
+                            }
+                        }
+                    }
+                }
+            }
+            return maxOuterCount;
+        }
+
+        function trimOuters() {
+            let items = paper.project.getItems({ recursive: true })[0].children;
+            for (let item of items) {
+                let outersOuters = [];
+                for (let outer of item.outers) {
+                    outersOuters.push(...outer.outers);
+                }
+                item.outers = item.outers.filter(outer => !outersOuters.includes(outer));
+            }
+        }
+
+        function groupInToOut(maxOuterCount) {
+            let items = paper.project.getItems({ recursive: true })[0].children;
+            for (let outerCount=maxOuterCount; outerCount>0; outerCount--) {
+                let group = [];
+                for (let item of items) {
+                    if (item.size) {
+                        if (item.size.width == viewBoxWidth && item.size.height == viewBoxHeight) {
+                            continue;
+                        }
+                    }
+                    if (item.outerCount == outerCount) {
+                        group.push(item);
+                    }
+                }
+                if (group.length > 0) {
+                    let g = new paper.Group(group);
+                    g.fillColor = null;
+                    g.strokeColor = getColor(outerCount);
+                }
+            }
+            for (let item of items) {
+                if (item.outerCount == 0) {
+                    item.strokeColor = getColor(0);
+                }
+            }
+        }
+
+        function groupByObject() {
+            let items = paper.project.getItems({ recursive: true })[0].children;
+            let parents = [];
+            for (let item of items) {
+                if (item.outerCount == 0 && item.segments) { // Fixme: segments is not reliable
+                    parents.push(item);
+                    item.strokeColor = getColor(1);
+                }
+            }
+            for (let parent of parents) {
+                let children = [];
+                for (let item of items) {
+                    if (item.outers && item.outers.includes(parent)) {
+                        children.push(item);
+                    }
+                }
+                if (children.length > 0) {
+                    let g = new paper.Group(children);
+                    g.fillColor = null;
+                    let g2 = new paper.Group([parent, g]);
+                    g2.fillColor = null;
+                    g2.strokeColor = getColor(1);
+                    g.strokeColor = getColor(0);
+                }
+            }
+        }
+
+        function process() {
+            let groupConnectedCheckbox = document.getElementById('groupConnected').checked;
+            let strokeWidth = parseFloat(document.getElementById('strokeWidth').value);
+            let groupBy = document.getElementById('groupBy').value;
+            let allBlack = document.getElementById('allBlack').checked;
+
+            ungroupAll();
+
+            let items = paper.project.getItems({ recursive: true });
+            let viewBox = items[0].children[0];
+            let canvas = document.getElementById('myCanvas');
+            let scale;
+            if (svgWidth.slice(-2) == 'mm') {
+                scale = SCALE_MM;
+            } else {
+                scale = 1;
+            }
+            canvas.width = viewBox.bounds.width * scale;
+            canvas.height = viewBox.bounds.height * scale;
+            viewBoxWidth = viewBox.size.width;
+            viewBoxHeight = viewBox.size.height;
+            // viewBox.remove();
+
+            if (groupConnectedCheckbox) {
+                groupConnected();
+            }
+
+            let maxOuterCount = generateOuters();
+
+            if (groupBy == 1) {
+                groupByObject();
+            } else if (groupBy == 2) {
+                trimOuters();
+                groupInToOut(maxOuterCount);
+            }
+
+            let root = paper.project.getItems()[0];
+            root.scale(scale);
+            root.translate(-root.bounds.x, -root.bounds.y);
+            root.strokeWidth = strokeWidth * SCALE_MM;
+            if (allBlack) {
+                root.strokeColor = 'black';
+            }
+        }
+
+        window.onload = function() {
+            let canvas = document.getElementById('myCanvas');
+            paper.setup(canvas);
+            paper.view.draw();
+        }
+
+        function load() {
+            paper.project.clear();
+            paper.project.importSVG(fileData, {
+                // expandShapes: true,
+                onLoad: process,
+                applyMatrix: true
+            });
+        }
+
+        async function loadFile() {
+            const curFiles = importSVG.files;
+            if (curFiles.length === 0) {
+                console.log('No files selected');
+                return;
+            }
+
+            fileData = await curFiles[0].text();
+            let template = document.getElementById('svgTemplate');
+            template.innerHTML = fileData;
+            svgWidth = template.content.querySelector('svg').attributes.width.value;
+            svgHeight = template.content.querySelector('svg').attributes.height.value;
+            load();
+        }
+    </script>
+</body>
+</html>
