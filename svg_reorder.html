@@ -41,6 +41,10 @@
                 asString: true,
                 bounds: 'content'
             });
+
+            // // Remove the first group tag
+            // svg = svg.replace(/<g[^>]*>/, '').replace(/<\/g><\/svg>/, '</svg>');
+
             let blob = new Blob([svg], { type: 'image/svg+xml' });
             let url = URL.createObjectURL(blob);
             let a = document.createElement('a');
@@ -184,7 +188,7 @@
 
         function groupInToOut(maxOuterCount) {
             let items = paper.project.getItems({ recursive: true })[0].children;
-            for (let outerCount=maxOuterCount; outerCount>0; outerCount--) {
+            for (let outerCount=maxOuterCount; outerCount>=0; outerCount--) {
                 let group = [];
                 for (let item of items) {
                     if (item.size) {
@@ -204,6 +208,7 @@
             }
             for (let item of items) {
                 if (item.outerCount == 0) {
+                    item.fillColor = null;
                     item.strokeColor = getColor(0);
                 }
             }
