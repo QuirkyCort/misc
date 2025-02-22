@@ -12,10 +12,10 @@ Estimate cutting time using a laser cutter
 ## [measure.html](https://quirkycort.github.io/misc/measure.html)
 Size measurement tools. Defaults are for a Pixel 3XL.
 
-## [Drill to Gcode](https://github.com/QuirkyCort/misc/drill_to_gcode.html)
+## [Drill to Gcode](https://quirkycort.github.io/misc/drill_to_gcode.html)
 Generate Gcode from an Excellon drill file.
 
-## [SVG Reorder](https://github.com/QuirkyCort/misc/svg_reorder.html)
+## [SVG Reorder](https://quirkycort.github.io/misc/svg_reorder.html)
 Reorders SVG elements for laser cutting.
 
 ## [Machine Vision Tools](https://github.com/QuirkyCort/misc/tree/main/machine_vision)
