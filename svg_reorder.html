@@ -289,6 +289,8 @@
         window.onload = function() {
             let canvas = document.getElementById('myCanvas');
             paper.setup(canvas);
+            canvas.style.width = 'auto';
+            canvas.style.height = 'auto';
             paper.view.draw();
         }
 
