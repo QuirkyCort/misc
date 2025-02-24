@@ -48,6 +48,7 @@
             svgTemp.innerHTML = svg;
             let fill = svgTemp.children[0].children[1].getAttribute('fill');
             let strokeWidth = svgTemp.children[0].children[1].getAttribute('stroke-width');
+            let stroke = svgTemp.children[0].children[1].getAttribute('stroke');
 
             // Remove the first group tag
             svg = svg.replace(/<g[^>]*>/, '').replace(/<\/g><\/svg>/, '</svg>');
@@ -56,6 +57,9 @@
                 if (child.tagName != 'def') {
                     child.setAttribute('fill', fill);
                     child.setAttribute('stroke-width', strokeWidth)
+                    if (stroke != 'none') {
+                        child.setAttribute('stroke', stroke);
+                    }
                 }
             }
             svg = svgTemp.innerHTML;
