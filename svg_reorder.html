@@ -15,6 +15,7 @@
     <button id="exportSVG">Export SVG</button><br>
 	<canvas id="myCanvas" width="100" height="100" style="max-width: 90vw;"></canvas>
     <template id="svgTemplate"></template>
+    <div id="svgTemp" style="display: none;"></div>
 
     <script type="text/javascript">
         let exportSVGBtn = document.getElementById('exportSVG');
@@ -42,8 +43,22 @@
                 bounds: 'content'
             });
 
-            // // Remove the first group tag
-            // svg = svg.replace(/<g[^>]*>/, '').replace(/<\/g><\/svg>/, '</svg>');
+            // Get attributes of first group tag
+            let svgTemp = document.getElementById('svgTemp');
+            svgTemp.innerHTML = svg;
+            let fill = svgTemp.children[0].children[1].getAttribute('fill');
+            let strokeWidth = svgTemp.children[0].children[1].getAttribute('stroke-width');
+
+            // Remove the first group tag
+            svg = svg.replace(/<g[^>]*>/, '').replace(/<\/g><\/svg>/, '</svg>');
+            svgTemp.innerHTML = svg;
+            for (let child of svgTemp.children[0].children) {
+                if (child.tagName != 'def') {
+                    child.setAttribute('fill', fill);
+                    child.setAttribute('stroke-width', strokeWidth)
+                }
+            }
+            svg = svgTemp.innerHTML;
 
             let blob = new Blob([svg], { type: 'image/svg+xml' });
             let url = URL.createObjectURL(blob);
@@ -217,10 +232,12 @@
         function groupByObject() {
             let items = paper.project.getItems({ recursive: true })[0].children;
             let parents = [];
+            let outerColors = [getColor(1), getColor(2), getColor(3)];
+            let outerColorIndex = 0;
             for (let item of items) {
                 if (item.outerCount == 0 && item.segments) { // Fixme: segments is not reliable
                     parents.push(item);
-                    item.strokeColor = getColor(1);
+                    item.strokeColor = outerColors[outerColorIndex++ % outerColors.length];
                 }
             }
             for (let parent of parents) {
@@ -235,7 +252,7 @@
                     g.fillColor = null;
                     let g2 = new paper.Group([parent, g]);
                     g2.fillColor = null;
-                    g2.strokeColor = getColor(1);
+                    g2.strokeColor = outerColors[outerColorIndex++ % outerColors.length];
                     g.strokeColor = getColor(0);
                 }
             }
