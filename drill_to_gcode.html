@@ -19,7 +19,12 @@
   <main>
     <input type="file" id="drillFile" accept=".drl">
     <p>Tool speed: <input type="text" id="toolSpeed" value="1000"></p>
-    <p>Plunge depth: <input type="text" id="plungeDepth" value="3"> mm</p>
+    <p>Plunge depth: <input type="text" id="plungeDepth" value="4.5"> mm (if Auto depth is set, this will be the max)</p>
+    <p><input type="checkbox" id="autoDepth" checked> Auto depth based on diameter</p>
+    <ul>
+        <li>Bit angle: <input type="text" id="bitAngle" value="20" checked> °</li>
+        <li>Added Depth: <input type="text" id="addedDepth" value="0.8" checked> mm (added to calculated depth)</li>
+    </ul>
     <p>Plunge speed: <input type="text" id="plungeSpeed" value="60"> mm/min</p>
     <p>Retract Z: <input type="text" id="retractZ" value="1"> mm</p>
     <p>Top Left X: <input type="text" id="refX" value="0"> Y: <input type="text" id="refY" value="0"></p>
@@ -48,6 +53,9 @@
         let params = {
             toolSpeed: parseFloat(document.getElementById('toolSpeed').value),
             plungeDepth: parseFloat(document.getElementById('plungeDepth').value),
+            autoDepth: document.getElementById('autoDepth').checked,
+            bitAngle: parseFloat(document.getElementById('bitAngle').value),
+            addedDepth: parseFloat(document.getElementById('addedDepth').value),
             plungeSpeed: parseFloat(document.getElementById('plungeSpeed').value),
             retractZ: parseFloat(document.getElementById('retractZ').value),
             refX: parseFloat(document.getElementById('refX').value),
@@ -80,15 +88,30 @@
         return gcode;
     }
 
+    function getDiameter(index) {
+        for (let tool of excellonData.tools) {
+            if (tool[0] === index) {
+                return tool[1];
+            }
+        }
+    }
+
     function generateDrill(params) {
         let gcode = '';
 
         for (let pos of excellonData.drillPos) {
             if (params.layers[pos.tool]) {
+                let holeDiameter = getDiameter(pos.tool);
+                let depth = params.plungeDepth;
+                if (params.autoDepth) {
+                    depth = (holeDiameter / 2) / Math.tan((params.bitAngle / 2) * Math.PI / 180);
+                    depth += params.addedDepth;
+                    depth = Math.min(depth, params.plungeDepth);
+                }
                 let x = pos.x - params.refX;
                 let y = pos.y - params.refY;
                 gcode += 'G0 X' + x + ' Y' + y + '\n'; // Move to position
-                gcode += 'G1 Z-' + params.plungeDepth + ' F' + params.plungeSpeed + '\n'; // Plunge
+                gcode += 'G1 Z-' + depth + ' F' + params.plungeSpeed + '\n'; // Plunge
                 gcode += 'G0 Z' + params.retractZ + '\n'; // Retract Z
             }
         }
