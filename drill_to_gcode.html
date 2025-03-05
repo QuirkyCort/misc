@@ -18,7 +18,8 @@
 
   <main>
     <input type="file" id="drillFile" accept=".drl">
-    <p>Plunge depth: <input type="text" id="plungeDepth" value="2"> mm</p>
+    <p>Tool speed: <input type="text" id="toolSpeed" value="1000"></p>
+    <p>Plunge depth: <input type="text" id="plungeDepth" value="3"> mm</p>
     <p>Plunge speed: <input type="text" id="plungeSpeed" value="60"> mm/min</p>
     <p>Retract Z: <input type="text" id="retractZ" value="1"> mm</p>
     <p>Top Left X: <input type="text" id="refX" value="0"> Y: <input type="text" id="refY" value="0"></p>
@@ -45,6 +46,7 @@
 
     function readParameters() {
         let params = {
+            toolSpeed: parseFloat(document.getElementById('toolSpeed').value),
             plungeDepth: parseFloat(document.getElementById('plungeDepth').value),
             plungeSpeed: parseFloat(document.getElementById('plungeSpeed').value),
             retractZ: parseFloat(document.getElementById('retractZ').value),
@@ -66,7 +68,6 @@
 
         gcode += 'G21\n';   // Set units to mm
         gcode += 'G90\n';   // Set absolute positioning
-        gcode += 'M4 S0\n'; // Enable Laser/Spindle (0 power)
         gcode += '\n'
         return gcode;
     }
@@ -75,6 +76,7 @@
         let gcode = '';
 
         gcode += 'G0 Z' + params.retractZ + '\n'; // Retract Z
+        gcode += 'M4 S' + params.toolSpeed + '\n'; // Enable Spindle at specified power
         return gcode;
     }
 
