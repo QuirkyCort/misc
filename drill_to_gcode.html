@@ -210,6 +210,9 @@
             return;
         }
 
+        excellonData.tools = [];
+        excellonData.drillPos = [];
+
         const fileData = await curFiles[0].text();
         excellonLines = fileData.split('\n');
         parseHeader();
