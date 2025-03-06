@@ -7,6 +7,9 @@
 
   <title>Drill 2 Gcode</title>
   <style>
+    input[type="text"] {
+      width: 3em;
+    }
   </style>
 </head>
 
@@ -20,10 +23,11 @@
     <input type="file" id="drillFile" accept=".drl">
     <p>Tool speed: <input type="text" id="toolSpeed" value="1000"></p>
     <p>Plunge depth: <input type="text" id="plungeDepth" value="4"> mm (if Auto depth is set, this will be the max)</p>
-    <p><input type="checkbox" id="autoDepth" checked> Auto depth based on diameter</p>
+    <p><input type="checkbox" id="autoDepth" checked> Auto depth based on diameter (for use with V bits)</p>
     <ul>
-        <li>Bit angle: <input type="text" id="bitAngle" value="20" checked> °</li>
-        <li>Added Depth: <input type="text" id="addedDepth" value="0.8" checked> mm (added to calculated depth)</li>
+        <li><input type="checkbox" id="override">Override Diameter and set all to <input type="text" id="overrideDiameter" value="1"> mm</li>
+        <li>Bit angle: <input type="text" id="bitAngle" value="20"> °</li>
+        <li>Added Depth: <input type="text" id="addedDepth" value="0.8"> mm (added to calculated depth)</li>
     </ul>
     <p>Plunge speed: <input type="text" id="plungeSpeed" value="60"> mm/min</p>
     <p>Retract Z: <input type="text" id="retractZ" value="1"> mm</p>
@@ -71,6 +75,8 @@
             toolSpeed: parseFloat(document.getElementById('toolSpeed').value),
             plungeDepth: parseFloat(document.getElementById('plungeDepth').value),
             autoDepth: document.getElementById('autoDepth').checked,
+            override: document.getElementById('override').checked,
+            overrideDiameter: parseFloat(document.getElementById('overrideDiameter').value),
             bitAngle: parseFloat(document.getElementById('bitAngle').value),
             addedDepth: parseFloat(document.getElementById('addedDepth').value),
             plungeSpeed: parseFloat(document.getElementById('plungeSpeed').value),
@@ -121,6 +127,9 @@
                 let holeDiameter = getDiameter(pos.tool);
                 let depth = params.plungeDepth;
                 if (params.autoDepth) {
+                    if (params.override) {
+                        holeDiameter = params.overrideDiameter;
+                    }
                     depth = (holeDiameter / 2) / Math.tan((params.bitAngle / 2) * Math.PI / 180);
                     depth += params.addedDepth;
                     depth = Math.min(depth, params.plungeDepth);
@@ -153,6 +162,9 @@
                 let y = (canvasPreview.height / PREVIEW_SCALE) - (pos.y - params.refY);
                 let holeDiameter = getDiameter(pos.tool);
                 if (params.autoDepth) {
+                    if (params.override) {
+                        holeDiameter = params.overrideDiameter;
+                    }
                     depth = (holeDiameter / 2) / Math.tan((params.bitAngle / 2) * Math.PI / 180);
                     depth += params.addedDepth;
                     if (depth > params.plungeDepth) {
