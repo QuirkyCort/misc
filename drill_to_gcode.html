@@ -30,24 +30,41 @@
     <p>Top Left X: <input type="text" id="refX" value="0"> Y: <input type="text" id="refY" value="0"></p>
     <p>Layers <button id="all">All</button> <button id="none">None</button></p>
     <ul id="layers"></ul>
-    <button id="generate">Generate Gcode</button>
+    <p>
+        <button id="generate">Generate Gcode</button>
+        <button id="save">Save Gcode</button>
+    </p>
+    <div style="display: flex;"">
+        <canvas id="canvasPreview" width="600" height="400" style="border: solid 1px blue;"></canvas>
+        <div style="margin-left: 10px;">
+            <h4>Legend</h4>
+            <p>Red: Hole is smaller than specified due to plunge depth limit.</p>
+        </div>
+    </div>
   </main>
 
   <script>
+    const PREVIEW_SCALE = 3;
+
     let drillFile = document.getElementById('drillFile');
     let layersAll = document.getElementById('all');
     let layersNone = document.getElementById('none');
     let generate = document.getElementById('generate');
+    let save = document.getElementById('save');
+    let canvasPreview = document.getElementById('canvasPreview');
+
     let excellonLines;
     let excellonData = {
         tools: [],
         drillPos: []
     }
+    let gcode;
 
     drillFile.addEventListener('change', loadFile);
     layersAll.addEventListener('click', selectAllLayers);
     layersNone.addEventListener('click', unselectAllLayers);
     generate.addEventListener('click', generateGcode);
+    save.addEventListener('click', saveGcode);
 
     function readParameters() {
         let params = {
@@ -126,12 +143,46 @@
         return gcode;
     }
 
+    function generatePreview(params) {
+        let ctx = canvasPreview.getContext('2d');
+        ctx.clearRect(0, 0, canvasPreview.width, canvasPreview.height);
+        for (let pos of excellonData.drillPos) {
+            if (params.layers[pos.tool]) {
+                ctx.strokeStyle = 'black';
+                let x = pos.x - params.refX;
+                let y = (canvasPreview.height / PREVIEW_SCALE) - (pos.y - params.refY);
+                let holeDiameter = getDiameter(pos.tool);
+                if (params.autoDepth) {
+                    depth = (holeDiameter / 2) / Math.tan((params.bitAngle / 2) * Math.PI / 180);
+                    depth += params.addedDepth;
+                    if (depth > params.plungeDepth) {
+                        ctx.strokeStyle = 'red';
+                        holeDiameter = params.plungeDepth * Math.tan((params.bitAngle / 2) * Math.PI / 180) * 2;
+                    }
+                }
+                ctx.beginPath();
+                ctx.arc(
+                    x * PREVIEW_SCALE,
+                    y * PREVIEW_SCALE,
+                    holeDiameter * PREVIEW_SCALE,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.stroke();
+            }
+        }
+    }
+
     function generateGcode() {
         let params = readParameters();
-        let gcode = generateHeader(params);
+        gcode = generateHeader(params);
         gcode += generatePre(params);
         gcode += generateDrill(params);
         gcode += generatePost(params);
+        generatePreview(params);
+    }
+
+    function saveGcode() {
         saveToFile('drill.gcode', gcode);
     }
 
