@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Image to RAW</title>
+  <style></style>
+</head>
+
+<body>
+  <p><input type="file" id="imageFile" accept=".png,.jpg,.jpeg,.bmp,.gif,.webp"></p>
+  <p>
+    <select id="format">
+      <option value="RGB565BE">RGB565BE</option>
+      <option value="RGB565LE">RGB565LE</option>
+    </select>
+  </p>
+  <p><button id="save">Save RAW</button></p>
+
+  <img id="image" src="" crossorigin="anonymous">
+
+  <script>
+    const imageFile = document.getElementById('imageFile');
+    const format = document.getElementById('format');
+    const save = document.getElementById('save');
+    const image = document.getElementById('image');
+
+    imageFile.addEventListener('change', loadFile);
+    save.addEventListener('click', saveRaw);
+
+    function loadFile() {
+      const file = imageFile.files[0];
+      const reader = new FileReader();
+      reader.onload = function() {
+        image.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function convert2RGB565BE() {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      const width = image.width;
+      const height = image.height;
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(image, 0, 0, width, height);
+      const imageData = context.getImageData(0, 0, width, height);
+      const data = imageData.data;
+      const buffer = new ArrayBuffer(width * height * 2);
+      const view = new DataView(buffer);
+      let offset = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+        view.setUint16(offset, rgb565, false);
+        offset += 2;
+      }
+      return view;
+    }
+
+    function convert2RGB565LE() {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      const width = image.width;
+      const height = image.height;
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(image, 0, 0, width, height);
+      const imageData = context.getImageData(0, 0, width, height);
+      const data = imageData.data;
+      const buffer = new ArrayBuffer(width * height * 2);
+      const view = new DataView(buffer);
+      let offset = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const rgb565 = ((g & 0x1C) << 11) | ((b & 0xF8) << 5) | (r & 0xF8) | ((g & 224) >> 5);
+        view.setUint16(offset, rgb565, false);
+        offset += 2;
+      }
+      return view;
+    }
+
+    function saveRaw() {
+      let view;
+      if (format.value === 'RGB565BE') {
+        view = convert2RGB565BE();
+      } else {
+        view = convert2RGB565LE();
+      }
+      const blob = new Blob([view], {type: 'application/octet-stream'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'image.raw';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+  </script>
+</body>
+</html>

@@ -21,6 +21,9 @@ Reorders SVG elements for laser cutting.
 ## [Machine Vision Tools](https://github.com/QuirkyCort/misc/tree/main/machine_vision)
 Tools to support the "Machine Vision" extension in [IoTy](https://quirkycort.github.io/IoTy/public/editor.html).
 
+## [Image to RAW](https://quirkycort.github.io/misc/image_to_raw.html)
+Converts image files (eg. PNG, JPEG) to a raw file suitable for display on microcontrollers.
+
 ## jscad_models
 Various [JSCAD](https://github.com/jscad/OpenJSCAD.org) models.
 
