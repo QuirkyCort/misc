@@ -98,6 +98,11 @@
                 ele.style.fill = 'none';
             }
         }
+        if (ele.attributes) {
+            if (ele.attributes.fill) {
+                ele.attributes.fill.value = 'none';
+            }
+        }
         if (ele.children) {
             for (let child of ele.children) {
                 removeFill(child);
@@ -108,12 +113,21 @@
     function setStroke(ele) {
         if (ele.style) {
             if (ele.style.strokeWidth) {
-                ele.style.strokeWidth = 0.2 * unitsPerMm;
+                ele.style.strokeWidth = 'none';
             }
             if (ele.style.stroke) {
-                ele.style.stroke = 'rgb(0, 0, 0)';
+                ele.style.stroke = 'none';
             }
         }
+        if (ele.attributes) {
+            let strokeWidth = document.createAttribute('strokeWidth');
+            strokeWidth.value = 0.2 * unitsPerMm;
+            ele.attributes.setNamedItem(strokeWidth);
+            let stroke = document.createAttribute('stroke');
+            stroke.value = 'rgb(0, 0, 0)';
+            ele.attributes.setNamedItem(stroke);
+        }
+
         if (ele.children) {
             for (let child of ele.children) {
                 setStroke(child);
