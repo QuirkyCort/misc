@@ -17,6 +17,12 @@
       <option value="RGB565LE">RGB565LE</option>
     </select>
   </p>
+  <p id="info"></p>
+  <p>
+    <label for="width">Output Width: </label><input type="number" id="width" value="0" min="0"><br>
+    <label for="height">Output Height: </label><input type="number" id="height" value="0" min="0"><br>
+    <label for="aspect">Maintain Aspect Ratio: </label><input type="checkbox" id="aspect" checked>
+  </p>
   <p><button id="save">Save RAW</button></p>
 
   <img id="image" src="" crossorigin="anonymous">
@@ -26,30 +32,80 @@
     const format = document.getElementById('format');
     const save = document.getElementById('save');
     const image = document.getElementById('image');
+    const info = document.getElementById('info');
+    const widthInput = document.getElementById('width');
+    const heightInput = document.getElementById('height');
+    const aspectCheckbox = document.getElementById('aspect');
 
     imageFile.addEventListener('change', loadFile);
     save.addEventListener('click', saveRaw);
+    widthInput.addEventListener('change', widthChanged);
+    heightInput.addEventListener('change', heightChanged);
 
     function loadFile() {
       const file = imageFile.files[0];
       const reader = new FileReader();
       reader.onload = function() {
+        image.onload = function() {
+          info.textContent = `Image loaded: ${image.naturalWidth}x${image.naturalHeight}`;
+          widthInput.value = image.naturalWidth;
+          heightInput.value = image.naturalHeight;
+        };
         image.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
 
-    function convert2RGB565BE() {
+    function widthChanged() {
+      let width = parseInt(widthInput.value);
+      if (isNaN(width)) {
+        width = image.naturalWidth;
+        widthInput.value = width;
+      }
+      if (width < 1) {
+        width = 1;
+        widthInput.value = width;
+      }
+      width = Math.round(width);
+      widthInput.value = width;
+      if (aspectCheckbox.checked) {
+        heightInput.value = Math.round((image.naturalHeight / image.naturalWidth) * width);
+      }
+    }
+
+    function heightChanged() {
+      let height = parseInt(heightInput.value);
+      if (isNaN(height)) {
+        height = image.naturalHeight;
+        heightInput.value = height;
+      }
+      if (height < 1) {
+        height = 1;
+        heightInput.value = height;
+      }
+      height = Math.round(height);
+      heightInput.value = height;
+      if (aspectCheckbox.checked) {
+        widthInput.value = Math.round((image.naturalWidth / image.naturalHeight) * height);
+      }
+    }
+    function getImageData() {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       const width = image.width;
       const height = image.height;
-      canvas.width = width;
-      canvas.height = height;
-      context.drawImage(image, 0, 0, width, height);
-      const imageData = context.getImageData(0, 0, width, height);
-      const data = imageData.data;
-      const buffer = new ArrayBuffer(width * height * 2);
+      const outWidth = parseInt(widthInput.value);
+      const outHeight = parseInt(heightInput.value);
+      canvas.width = outWidth;
+      canvas.height = outHeight;
+      context.drawImage(image, 0, 0, outWidth, outHeight);
+      const imageData = context.getImageData(0, 0, outWidth, outHeight);
+      return imageData.data;
+    }
+
+    function convert2RGB565BE(data) {
+      const pixelCount = data.length / 4;
+      const buffer = new ArrayBuffer(pixelCount * 2);
       const view = new DataView(buffer);
       let offset = 0;
       for (let i = 0; i < data.length; i += 4) {
@@ -63,17 +119,9 @@
       return view;
     }
 
-    function convert2RGB565LE() {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      const width = image.width;
-      const height = image.height;
-      canvas.width = width;
-      canvas.height = height;
-      context.drawImage(image, 0, 0, width, height);
-      const imageData = context.getImageData(0, 0, width, height);
-      const data = imageData.data;
-      const buffer = new ArrayBuffer(width * height * 2);
+    function convert2RGB565LE(data) {
+      const pixelCount = data.length / 4;
+      const buffer = new ArrayBuffer(pixelCount * 2);
       const view = new DataView(buffer);
       let offset = 0;
       for (let i = 0; i < data.length; i += 4) {
@@ -89,10 +137,12 @@
 
     function saveRaw() {
       let view;
+
+      let data = getImageData();
       if (format.value === 'RGB565BE') {
-        view = convert2RGB565BE();
+        view = convert2RGB565BE(data);
       } else {
-        view = convert2RGB565LE();
+        view = convert2RGB565LE(data);
       }
       const blob = new Blob([view], {type: 'application/octet-stream'});
       const url = URL.createObjectURL(blob);
