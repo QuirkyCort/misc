@@ -114,8 +114,8 @@ const front = (params) => {
   solids.push(cylinder({radius: SCREW_BASE_WIDTH/2, height: SCREW_BASE_THICKNESS, center: [0, yScrew, SCREW_BASE_THICKNESS/2], segments: 32}))
   holes.push(cylinder({radius: m3/2, height: SCREW_BASE_THICKNESS, center: [0, yScrew, SCREW_BASE_THICKNESS/2], segments: 32}))
 
-  xOuter = -xOuter;
-  xInner = -xInner;
+  xOuter = xOuter;
+  xInner = width / 2 - SCREW_BASE_WIDTH;
   yBase = -yBase;
   yScrew = -yScrew;
   solids.push(
@@ -123,12 +123,12 @@ const front = (params) => {
       [0, 0, 0],
       extrudeLinear(
         {height: SCREW_BASE_THICKNESS},
-        polygon({ points: [ [xOuter, yBase], [xInner, yScrew], [-xInner, yScrew], [-xOuter, yBase] ] })
+        polygon({ points: [ [xOuter, yBase], [xInner + 1, yBase], [xInner + 1, yScrew], [xOuter + 1, yScrew]  ] })
       )
     )
   )
-  solids.push(cylinder({radius: SCREW_BASE_WIDTH/2, height: SCREW_BASE_THICKNESS, center: [0, yScrew, SCREW_BASE_THICKNESS/2], segments: 32}))
-  holes.push(cylinder({radius: m3/2, height: SCREW_BASE_THICKNESS, center: [0, yScrew, SCREW_BASE_THICKNESS/2], segments: 32}))
+  solids.push(cylinder({radius: SCREW_BASE_WIDTH/2, height: SCREW_BASE_THICKNESS, center: [width/2 - SCREW_BASE_WIDTH/2 + 1, yScrew, SCREW_BASE_THICKNESS/2], segments: 32}))
+  holes.push(cylinder({radius: m3/2, height: SCREW_BASE_THICKNESS, center: [width/2 - SCREW_BASE_WIDTH/2 + 1, yScrew, SCREW_BASE_THICKNESS/2], segments: 32}))
 
   // Clearance hole for flash LED
   holes.push(cylinder({radius: ledHoleRadius, height: SCREW_BASE_THICKNESS, center: [LED_HOLE_X_OFFSET, LED_HOLE_Y_OFFSET, SCREW_BASE_THICKNESS/2], segments: 32}))
@@ -171,8 +171,8 @@ const back = (params) => {
   solids.push(cylinder({radius: SCREW_BASE_WIDTH/2, height: BACK_THICKNESS, center: [0, yScrew, BACK_THICKNESS/2], segments: 32}))
   holes.push(cylinder({radius: m3_hole/2, height: BACK_THICKNESS, center: [0, yScrew, BACK_THICKNESS/2], segments: 32}))
 
-  xOuter = -xOuter;
-  xInner = -xInner;
+  xOuter = xOuter;
+  xInner = width / 2 - SCREW_BASE_WIDTH;
   yBase = -yBase;
   yScrew = -yScrew;
   solids.push(
@@ -180,12 +180,12 @@ const back = (params) => {
       [0, 0, 0],
       extrudeLinear(
         {height: BACK_THICKNESS},
-        polygon({ points: [ [xOuter, yBase], [xInner, yScrew], [-xInner, yScrew], [-xOuter, yBase] ] })
+        polygon({ points: [ [xOuter, yBase], [xInner + 1, yBase], [xInner + 1, yScrew], [xOuter + 1, yScrew]  ] })
       )
     )
   )
-  solids.push(cylinder({radius: SCREW_BASE_WIDTH/2, height: BACK_THICKNESS, center: [0, yScrew, BACK_THICKNESS/2], segments: 32}))
-  holes.push(cylinder({radius: m3_hole/2, height: BACK_THICKNESS, center: [0, yScrew, BACK_THICKNESS/2], segments: 32}))
+  solids.push(cylinder({radius: SCREW_BASE_WIDTH/2, height: BACK_THICKNESS, center: [width/2 - SCREW_BASE_WIDTH/2 + 1, yScrew, BACK_THICKNESS/2], segments: 32}))
+  holes.push(cylinder({radius: m3_hole/2, height: BACK_THICKNESS, center: [width/2 - SCREW_BASE_WIDTH/2 + 1, yScrew, BACK_THICKNESS/2], segments: 32}))
 
   return merge(solids, holes);
 }
