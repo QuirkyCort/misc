@@ -19,7 +19,7 @@ const FRONT_PCB_SUPPORT_THICKNESS = 0;
 const FRONT_PCB_SUPPORT_LENGTH = 0;
 const SWIVEL_THICKNESS = 4;
 const SWIVEL_LENGTH = 11;
-const LED_HOLE_X_OFFSET = -10;
+const LED_HOLE_X_OFFSET = -8;
 const LED_HOLE_Y_OFFSET = -16;
 
 const getParameterDefinitions = () => {
