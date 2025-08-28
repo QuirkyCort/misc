@@ -12,7 +12,7 @@ const getParameterDefinitions = () => {
   return [
     { name: 'width', type: 'int', initial: 3, step: 1, min: 3, caption: 'Base Width in Lego units (8mm)' },
     { name: 'length', type: 'int', initial: 6, step: 1, min:4, caption: 'Base Length in Lego units (8mm)' },
-    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
+    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
     { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
     { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
@@ -56,7 +56,7 @@ const main = (params) => {
 
   const width = params.width;
   const length = params.length;
-  const m3 = params.m3;
+  const m3 = params.m3_hole;
 
   let baseWidth = Math.max(width * 8, INNER_WIDTH + THICKNESS * 2);
   let baseLength = length * 8;
