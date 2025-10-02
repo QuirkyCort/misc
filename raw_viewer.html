@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Raw Viewer</title>
+  <style>
+    canvas {
+        width: 200px;
+        height: 200px;
+        border: solid 1px gray;
+    }
+    #in_canvas {
+        margin-right: 1em;
+    }
+
+    .stages {
+        display: flex;
+        border: solid 1px gray;
+        margin-bottom: 0.5em;
+    }
+    .left {
+        width: 10em;
+        border-right: solid 1px gray;
+        padding: 0 1em;
+    }
+    .right {
+        padding: 1em;
+    }
+    .right > ul {
+        margin-top: 0;
+    }
+    input[type=number] {
+        width: 5em;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Raw Viewer</h1>
+  </header>
+
+  <main>
+    <canvas id="in_canvas" width="160" height="120"></canvas>
+
+    <div class="stages">
+        <div class="right">
+            <ul>
+                <li>You must set the width, height, and format correctly.</li>
+            </ul>
+            <select id="sizes">
+                <option value="custom">Custom Size</option>
+                <option value="96x96">96x96</option>
+                <option value="160x120">QQVGA (160x120)</option>
+                <option value="128x128">128x128</option>
+                <option value="176x144">QCIF (176x144)</option>
+                <option value="240x176">HQVGA (240x176)</option>
+                <option value="240x240">240x240</option>
+                <option value="320x240">QVGA (320x240)</option>
+                <option value="320x320">320x320</option>
+                <option value="400x296">CIF (400x296)</option>
+                <option value="480x320">HVGA (480x320)</option>
+                <option value="640x480">VGA (640x480)</option>
+                <option value="800x600">SVGA (800x600)</option>
+                <option value="1024x768">XVGA (1024x768)</option>
+                <option value="1280x720">HD (1280x720)</option>
+                <option value="1280x1024">SXGA (1280x1024)</option>
+                <option value="1600x1200">UXGA (1600x1200)</option>
+                <option value="1920x1080">FHD (1920x1080)</option>
+                <option value="2048x1536">QXGA (2048x1536)</option>
+                <option value="2560x1440">QHQ (2560x1440)</option>
+                <option value="2560x1600">WQXGA (2560x1600)</option>
+                <option value="2560x2048">QSXGA (2560x2048)</option>
+            </select>
+            Width:<input id="width" type="number" value="160" step="1">
+            Height:<input id="height" type="number" value="120" step="1"><br>
+            <select id="format">
+                <option value="yuv422">YUV422</option>
+                <option value="rgb565">RGB565</option>
+                <option value="grayscale">Grayscale</option>
+            </select>
+            Display Scale:<input id="scale" type="number" value="2" step="1">
+            <input id="file" type="file">
+        </div>
+    </div>
+  </main>
+
+  <script>
+    let buf = null;
+
+    let canvas = document.getElementById('in_canvas');
+    let widthInput = document.getElementById('width');
+    let heightInput = document.getElementById('height');
+    let formatInput = document.getElementById('format');
+    let sizesInput = document.getElementById('sizes');
+    let fileInput = document.getElementById('file');
+    let scaleInput = document.getElementById('scale');
+
+    function yuv2rgb_jpeg(y, u, v) {
+        y = y;
+        u = u - 128;
+        v = v - 128;
+
+        r = y + 1.402 * v;
+        g = y - 0.344136 * u - 0.714136 * v;
+        b = y + 1.772 * u;
+
+        r = Math.round(Math.max(Math.min(r, 255), 0));
+        g = Math.round(Math.max(Math.min(g, 255), 0));
+        b = Math.round(Math.max(Math.min(b, 255), 0));
+
+        return [r, g, b];
+    }
+
+    function drawToCanvas() {
+        let width = parseInt(widthInput.value);
+        let height = parseInt(heightInput.value);
+        let format = formatInput.value;
+
+        let ctx = canvas.getContext('2d');
+        canvas.width = width;
+        canvas.height = height;
+        let scale = parseInt(scaleInput.value);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        if (format == 'grayscale') {
+            for (let y=0; y<height; y++) {
+                for (let x=0; x<width; x++) {
+                    let pos = y * width + x;
+                    let canvas_pos = pos * 4;
+
+                    data[canvas_pos] = buf[pos];
+                    data[canvas_pos + 1] = buf[pos];
+                    data[canvas_pos + 2] = buf[pos];
+                    data[canvas_pos + 3] = 255;
+                }
+            }
+        } else if (format == 'yuv422') {
+            for (let y=0; y<height; y++) {
+                for (let x=0; x<width; x+=2) {
+                    let pos = (y * width + x);
+                    let yuv_pos = pos * 2 ;
+                    let canvas_pos = pos * 4;
+
+                    let y1 = buf[yuv_pos];
+                    let u = buf[yuv_pos + 1];
+                    let y2 = buf[yuv_pos + 2];
+                    let v = buf[yuv_pos + 3];
+
+                    let rgb1 = yuv2rgb_jpeg(y1, u, v);
+                    let rgb2 = yuv2rgb_jpeg(y2, u, v);
+
+                    data[canvas_pos] = rgb1[0];
+                    data[canvas_pos + 1] = rgb1[1];
+                    data[canvas_pos + 2] = rgb1[2];
+                    data[canvas_pos + 3] = 255;
+                    data[canvas_pos + 4] = rgb2[0];
+                    data[canvas_pos + 5] = rgb2[1];
+                    data[canvas_pos + 6] = rgb2[2];
+                    data[canvas_pos + 7] = 255;
+                }
+            }
+        } else if (format == 'rgb565') {
+            for (let y=0; y<height; y++) {
+                for (let x=0; x<width; x++) {
+                    let pos = (y * width + x);
+                    let rgb565_pos = pos * 2 ;
+                    let canvas_pos = pos * 4;
+
+                    let r = buf[rgb565_pos] & 0xF8;
+                    let g = ((buf[rgb565_pos] & 0x07) << 5) | ((buf[rgb565_pos + 1] & 0xE0) >> 3);
+                    let b = (buf[rgb565_pos + 1] & 0x1F) << 3;
+
+                    data[canvas_pos] = r;
+                    data[canvas_pos + 1] = g;
+                    data[canvas_pos + 2] = b;
+                    data[canvas_pos + 3] = 255;
+                }
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+    }
+
+    function customSize() {
+        sizesInput.value = 'custom';
+        draw();
+    }
+
+    function setSizes() {
+        let size = sizesInput.value;
+        if (size == 'custom') {
+            return;
+        }
+        let wh = size.split('x');
+        widthInput.value = parseInt(wh[0]);
+        heightInput.value = parseInt(wh[1]);
+        draw();
+    }
+
+    function setCanvasSize() {
+        let scale = parseInt(scaleInput.value);
+        canvas.style.width = (canvas.width * scale) + 'px';
+        canvas.style.height = (canvas.height * scale) + 'px';
+    }
+
+    function draw() {
+        if (buf == null) {
+            return;
+        }
+        drawToCanvas();
+        setCanvasSize();
+    }
+
+    function loadFile(e) {
+        let files = e.target.files;
+
+        if (files.length == 0) {
+            return;
+        }
+
+        let reader = new FileReader();
+        reader.onload = function (e) {
+            buf = new Uint8Array(e.target.result);
+            draw();
+        };
+        reader.readAsArrayBuffer(files[0]);
+        fileInput.value = null;
+    }
+
+    fileInput.onchange = loadFile;
+    scaleInput.onchange = setCanvasSize;
+    formatInput.onchange = customSize;
+    widthInput.onchange = customSize;
+    heightInput.onchange = customSize
+    sizesInput.onchange = setSizes;
+</script>
+</body>
+</html>
