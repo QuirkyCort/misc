@@ -76,13 +76,14 @@
                 <option value="2560x2048">QSXGA (2560x2048)</option>
             </select>
             Width:<input id="width" type="number" value="160" step="1">
-            Height:<input id="height" type="number" value="120" step="1"><br>
+            Height:<input id="height" type="number" value="120" step="1">
             <select id="format">
                 <option value="yuv422">YUV422</option>
                 <option value="rgb565">RGB565</option>
                 <option value="grayscale">Grayscale</option>
-            </select>
+            </select><br>
             Display Scale:<input id="scale" type="number" value="2" step="1">
+            <input id="pixelated" type="checkbox"><label for="pixelated">Pixelated</label><br>
             <input id="file" type="file">
         </div>
     </div>
@@ -98,6 +99,7 @@
     let sizesInput = document.getElementById('sizes');
     let fileInput = document.getElementById('file');
     let scaleInput = document.getElementById('scale');
+    let pixelatedInput = document.getElementById('pixelated');
 
     function yuv2rgb_jpeg(y, u, v) {
         y = y;
@@ -232,12 +234,21 @@
         fileInput.value = null;
     }
 
+    function setPixelated() {
+        if (pixelatedInput.checked) {
+            canvas.style.imageRendering = 'pixelated';
+        } else {
+            canvas.style.imageRendering = 'auto';
+        }
+    }
+
     fileInput.onchange = loadFile;
     scaleInput.onchange = setCanvasSize;
     formatInput.onchange = customSize;
     widthInput.onchange = customSize;
     heightInput.onchange = customSize
     sizesInput.onchange = setSizes;
+    pixelatedInput.onchange = setPixelated;
 </script>
 </body>
 </html>
