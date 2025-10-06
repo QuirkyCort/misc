@@ -95,7 +95,8 @@
         <div class="right">
             Start:<input id="start_x" type="number" value="76" step="1"><input id="start_y" type="number" value="19" step="1">
             Size:<input id="size" type="number" value="21" step="1">
-            Gap:<input id="gap" type="number" value="1" step="1">
+            GapX:<input id="gap_x" type="number" value="1" step="1">
+            GapY:<input id="gap_y" type="number" value="1" step="1">
         </div>
     </div>
     <div class="stages">
@@ -129,7 +130,8 @@
     let startXInput = document.getElementById('start_x');
     let startYInput = document.getElementById('start_y');
     let sizeInput = document.getElementById('size');
-    let gapInput = document.getElementById('gap');
+    let gapXInput = document.getElementById('gap_x');
+    let gapYInput = document.getElementById('gap_y');
     let thresholdInput = document.getElementById('threshold');
     let outSizeInput = document.getElementById('outSize');
     let filenamePrefixInput = document.getElementById('filenamePrefix');
@@ -164,16 +166,17 @@
         let startX = parseInt(startXInput.value);
         let startY = parseInt(startYInput.value);
         let size = parseInt(sizeInput.value);
-        let gap = parseInt(gapInput.value);
+        let gapX = parseInt(gapXInput.value);
+        let gapY = parseInt(gapYInput.value);
 
         let ctx = canvas.getContext('2d');
         ctx.strokeStyle = 'red';
         ctx.lineWidth = 1;
 
         for (let y=0; y<3; y+=1) {
-            let y_pos = startY + y * (size + gap);
+            let y_pos = startY + y * (size + gapY);
             for (let x=0; x<3; x+=1) {
-                let x_pos = startX + x * (size + gap);
+                let x_pos = startX + x * (size + gapX);
                 ctx.strokeRect(x_pos, y_pos, size, size);
             }
         }
@@ -227,7 +230,8 @@
         let startX = parseInt(startXInput.value);
         let startY = parseInt(startYInput.value);
         let size = parseInt(sizeInput.value);
-        let gap = parseInt(gapInput.value);
+        let gapX = parseInt(gapXInput.value);
+        let gapY = parseInt(gapYInput.value);
         let threshold = parseInt(thresholdInput.value);
         let outSize = parseInt(outSizeInput.value);
         let filenamePrefix = filenamePrefixInput.value;
@@ -253,9 +257,9 @@
 
         let count = 0;
         for (let y=0; y<3; y+=1) {
-            let y_pos = startY + y * (size + gap);
+            let y_pos = startY + y * (size + gapY);
             for (let x=0; x<3; x+=1) {
-                let x_pos = startX + x * (size + gap);
+                let x_pos = startX + x * (size + gapX);
                 const outBuf = new ArrayBuffer(outSize ** 2);
                 const view = new DataView(outBuf);
                 for (let oy=0; oy<outSize; oy+=1) {
@@ -303,7 +307,8 @@
     startXInput.onchange = draw;
     startYInput.onchange = draw;
     sizeInput.onchange = draw;
-    gapInput.onchange = draw;
+    gapXInput.onchange = draw;
+    gapYInput.onchange = draw;
     thresholdInput.onchange = draw;
     outSizeInput.onchange = draw;
     extractButton.onclick = extract;
