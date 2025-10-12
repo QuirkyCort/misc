@@ -11,6 +11,7 @@
         width: 200px;
         height: 200px;
         border: solid 1px gray;
+        cursor: crosshair;
     }
     #in_canvas {
         margin-right: 1em;
@@ -45,6 +46,12 @@
 
   <main>
     <canvas id="in_canvas" width="160" height="120"></canvas>
+
+    <div class="stages">
+        <div class="right">
+            <span id="values"></span>
+        </div>
+    </div>
 
     <div class="stages">
         <div class="right">
@@ -100,6 +107,7 @@
     let fileInput = document.getElementById('file');
     let scaleInput = document.getElementById('scale');
     let pixelatedInput = document.getElementById('pixelated');
+    let valuesSpan = document.getElementById('values');
 
     function yuv2rgb_jpeg(y, u, v) {
         y = y;
@@ -242,6 +250,47 @@
         }
     }
 
+    function updatePixelValues(e) {
+        if (buf == null) {
+            valuesSpan.textContent = '';
+            return;
+        }
+        let rect = canvas.getBoundingClientRect();
+        let scale = parseInt(scaleInput.value);
+        let x = Math.floor((e.clientX - rect.left) / scale);
+        let y = Math.floor((e.clientY - rect.top) / scale);
+        let width = parseInt(widthInput.value);
+        let height = parseInt(heightInput.value);
+        let format = formatInput.value;
+
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            valuesSpan.textContent = '';
+            return;
+        }
+
+        let pos = y * width + x;
+
+        if (format == 'grayscale') {
+            let gray = buf[pos];
+            valuesSpan.textContent = `(${x}, ${y}): Gray=${gray}`;
+        } else if (format == 'yuv422') {
+            let yuv_pos = pos * 2 ;
+            let y1 = buf[yuv_pos];
+            if (x % 2 == 1) {
+                yuv_pos -= 2;
+            }
+            let u = buf[yuv_pos + 1];
+            let v = buf[yuv_pos + 3];
+            valuesSpan.textContent = `(${x}, ${y}): Y=${y1} U=${u} V=${v}`;
+        } else if (format == 'rgb565') {
+            let rgb565_pos = pos * 2 ;
+            let r = buf[rgb565_pos] & 0xF8;
+            let g = ((buf[rgb565_pos] & 0x07) << 5) | ((buf[rgb565_pos + 1] & 0xE0) >> 3);
+            let b = (buf[rgb565_pos + 1] & 0x1F) << 3;
+            valuesSpan.textContent = `(${x}, ${y}): R=${r} G=${g} B=${b}`;
+        }
+    }
+
     fileInput.onchange = loadFile;
     scaleInput.onchange = setCanvasSize;
     formatInput.onchange = customSize;
@@ -249,6 +298,7 @@
     heightInput.onchange = customSize
     sizesInput.onchange = setSizes;
     pixelatedInput.onchange = setPixelated;
+    canvas.onmousemove = updatePixelValues;
 </script>
 </body>
 </html>
