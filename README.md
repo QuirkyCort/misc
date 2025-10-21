@@ -24,6 +24,9 @@ Tools to support the "Machine Vision" extension in [IoTy](https://quirkycort.git
 ## [Image to RAW](https://quirkycort.github.io/misc/image_to_raw.html)
 Converts image files (eg. PNG, JPEG) to a raw file suitable for display on microcontrollers.
 
+## [RAW Viewer](https://quirkycort.github.io/misc/raw_viewer.html)
+View raw file in various formats (eg. RGB565).
+
 ## jscad_models
 Various [JSCAD](https://github.com/jscad/OpenJSCAD.org) models.
 
