@@ -12,6 +12,10 @@ The input file must be a raw YUV binary file.
 Tool for visualizing circle detection.
 The input file must be a raw YUV or Grayscale binary file.
 
+## [line_detect.html](https://quirkycort.github.io/misc/machine_vision/line_detect.html)
+Tool for visualizing line detection.
+The input file must be a raw YUV or Grayscale binary file.
+
 License
 ---
 GNU General Public License v3.0
