@@ -15,6 +15,7 @@
     <select id="format">
       <option value="RGB565BE">RGB565BE</option>
       <option value="RGB565LE">RGB565LE</option>
+      <option value="GRAY8">GRAYSCALE 8bpp</option>
     </select>
   </p>
   <p id="info"></p>
@@ -135,14 +136,31 @@
       return view;
     }
 
+    function convert2GRAY8(data) {
+      const pixelCount = data.length / 4;
+      const buffer = new ArrayBuffer(pixelCount);
+      const view = new DataView(buffer);
+      let offset = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        view.setUint8(offset, Math.max(r, g, b), false);
+        offset += 1;
+      }
+      return view;
+    }
+
     function saveRaw() {
       let view;
 
       let data = getImageData();
-      if (format.value === 'RGB565BE') {
+      if (format.value == 'RGB565BE') {
         view = convert2RGB565BE(data);
-      } else {
+      } else if (format.value == 'RGB565LE') {
         view = convert2RGB565LE(data);
+      } else if (format.value == 'GRAY8') {
+        view = convert2GRAY8(data);
       }
       const blob = new Blob([view], {type: 'application/octet-stream'});
       const url = URL.createObjectURL(blob);
