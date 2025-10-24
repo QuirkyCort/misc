@@ -306,7 +306,7 @@
         let dirVecs = [];
         for (let a=minAngle; a<maxAngle; a+=angleResolution) {
             let aRadian = a / 180 * Math.PI;
-            dirVecs.push([Math.floor(1000*Math.cos(aRadian)), Math.floor(1000*Math.sin(aRadian))]);
+            dirVecs.push([Math.floor(1024*Math.cos(aRadian)), Math.floor(1024*Math.sin(aRadian))]);
             let row = [];
             for (let b=-rMax; b<=rMax; b++) {
                 row.push(0);
@@ -324,8 +324,8 @@
                 if (buf[row + x]) {
                     posVec[0] = x - centerX;
                     for (let i=0; i<accum.length; i++) {
-                        let r = Math.floor(dot(dirVecs[i], posVec) / 1000);
-                        let j = Math.floor(r + rMax);
+                        let r = Math.floor(dot(dirVecs[i], posVec) >> 10);
+                        let j = r + rMax;
                         accum[i][j] += 1;
                     }
                 }
