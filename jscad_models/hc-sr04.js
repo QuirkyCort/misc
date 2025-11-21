@@ -70,6 +70,9 @@ const main = (params) => {
   holes.push(cuboid({size: [width-(diameter/3), THICKNESS, diameter/2+TOP_BORDER], center: [0, 0, height-(diameter/2+TOP_BORDER)/2]}))
   holes.push(cuboid({size: [width-diameter/3, THICKNESS, diameter/2], center: [0, 0, height-TOP_BORDER-diameter+diameter/4]}))
 
+  // Hole for oscillator
+  holes.push(cuboid({size: [13, THICKNESS, 3], center: [0, 0, height-(diameter+TOP_BORDER)-1.5]}))
+
   // Securing screws
   holes.push(translate([width/2+screwOffset, 0, height-TOP_BORDER], rotateX(Math.PI/2, cylinder({radius: m3/2, height: THICKNESS, segments: 32}))))
   holes.push(translate([-width/2-screwOffset, 0, height-TOP_BORDER], rotateX(Math.PI/2, cylinder({radius: m3/2, height: THICKNESS, segments: 32}))))
