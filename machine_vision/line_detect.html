@@ -99,13 +99,14 @@
         </div>
         <div class="right">
             <ul>
-                <li>Start with a low threshold. Adjust your radius until the desired line is detected.</li>
-                <li>Increase the threshold to remove false positives.</li>
+                <li>Start with a low threshold, then increase to remove false positives.</li>
+                <li>Reducing the min/max range helps reduce false positives and improve performance.</li>
+                <li>Increasing angle resolution improves accuracy but reduces performance.</li>
             </ul>
             Min Angle:<input id="min_angle" type="number" value="0" step="1">
             Max Angle:<input id="max_angle" type="number" value="180" step="1">
             Angle resolution:<input id="angle_resolution" type="number" value="1">
-            Pixel Threshold:<input id="pixel_threshold" type="number" value="80" step="1">
+            Pixel Threshold:<input id="pixel_threshold" type="number" value="40" step="1">
         </div>
     </div>
 
