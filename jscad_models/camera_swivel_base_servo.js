@@ -9,9 +9,9 @@ const { cylinder, cuboid } = jscad.primitives
 
 const getParameterDefinitions = () => {
   return [
-    { name: 'servoHole', type: 'float', initial: 1.5, caption: 'Diameter of servo screw holes (for Type A only)' },
+    { name: 'servoHole', type: 'float', initial: 1.5, caption: 'Diameter of servo screw holes (for SG60 and MG995 A)' },
     { name: 'type', type: 'choice', caption: 'Base type', values: ['SG90', 'MG995 A', 'MG995 B'], captions: ['SG90', 'MG995 A', 'MG995 B'], initial: 'SG90' },
-    { name: 'swivelType', type: 'choice', caption: 'Swivel type', values: ['Horizontal', 'Vertical'], captions: ['Horizontal', 'Vertical'], initial: 'Horizontal' },
+    { name: 'swivelType', type: 'choice', caption: 'Swivel type', values: ['Horizontal', 'Vertical', 'Slanted'], captions: ['Horizontal', 'Vertical', 'Slanted'], initial: 'Horizontal' },
     { name: 'swivelHeight', type: 'float', initial: 20, step: 0.1, caption: 'Swivel Mount Height/Length' },
     { name: 'swivelOffset', type: 'float', initial: 9, step: 0.1, caption: 'Swivel Mount Offset (for Vertical only)' },
     { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
@@ -37,8 +37,9 @@ const MG995_BASE_LENGTH = 32;
 const TYPE_B_SCREW_HOLES = 3;
 const SWIVEL_THICKNESS = 4;
 const SWIVEL_LENGTH = 11;
+const SWIVEL_SLANT_ANGLE = 30 / 180 * Math.PI;
 
-const swivel = (params) => {
+const swivel = (params, angle) => {
   const solids = [];
   const holes = [];
 
@@ -50,8 +51,20 @@ const swivel = (params) => {
   solids.push(translate([0, 0, swivelHeight], rotateY(Math.PI/2, cylinder({radius: SWIVEL_LENGTH/2, height: SWIVEL_THICKNESS, segments: 32}))))
   holes.push(translate([0, 0, swivelHeight], rotateY(Math.PI/2, cylinder({radius: m3_hole/2, height: SWIVEL_THICKNESS, segments: 32}))))
 
+  return rotateX(angle, merge(solids, holes));
+}
+
+const slanted_swivel = (params) => {
+  const solids = [];
+  const holes = [];
+
+  solids.push(swivel(params, SWIVEL_SLANT_ANGLE));
+  holes.push(cuboid({size: [SWIVEL_THICKNESS, SWIVEL_LENGTH*2, 10], center: [0, 0, -10/2+Math.sin(SWIVEL_SLANT_ANGLE) * SWIVEL_LENGTH/2]}));
+
   return merge(solids, holes);
 }
+
+
 
 const main = (params) => {
   const solids = [];
@@ -101,9 +114,11 @@ const main = (params) => {
   // Swivel mount
   if (swivelType == 'Vertical') {
     solids.push(cuboid({size: [SWIVEL_THICKNESS, swivelOffset, 8], center: [0, swivelOffset/2, 0]}))
-    solids.push(translate([0, swivelOffset, -4], swivel(params)))
+    solids.push(translate([0, swivelOffset, -4], swivel(params, 0)))
   } else if (swivelType == 'Horizontal') {
-    solids.push(translate([0, 0, SWIVEL_LENGTH/2 - 4], rotateX(Math.PI/2, swivel(params))))
+    solids.push(translate([0, 0, SWIVEL_LENGTH/2 - 4], swivel(params, Math.PI / 2)))
+  } else if (swivelType == 'Slanted') {
+    solids.push(translate([0, 0, Math.sin(SWIVEL_SLANT_ANGLE) * -SWIVEL_LENGTH/2 - 4], slanted_swivel(params)))
   }
 
   return merge(solids, holes);
