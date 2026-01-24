@@ -60,6 +60,12 @@ const main = (params) => {
   // Mounting points for motor
   solids.push(cuboid({size: [10, MG995_WIDTH, height], center: [MG995_LENGTH/2+5, 0, height/2-4]}))
   solids.push(cuboid({size: [10, MG995_WIDTH, height], center: [-(MG995_LENGTH/2+5), 0, height/2-4]}))
+  if (height > 27.8-12) { // Gap for cable
+    const holeHeight = height - (27.8 - 12)
+    const holeWidth = SG90_WIDTH/2+4.5/2
+    holes.push(cuboid({size: [10, holeWidth, holeHeight], center: [MG995_LENGTH/2+5, -(MG995_WIDTH/2)+holeWidth/2, holeHeight/2-4]}))
+    holes.push(cuboid({size: [10, holeWidth, holeHeight], center: [-(MG995_LENGTH/2+5), -(MG995_WIDTH/2)+holeWidth/2, holeHeight/2-4]}))
+  }
 
   holes.push(cylinder({radius: m4/2, height: height, center: [MG995_HOLES_DIST/2, -5, height/2-4], segments: 32}))
   holes.push(cylinder({radius: m4/2, height: height, center: [-MG995_HOLES_DIST/2, -5, height/2-4], segments: 32}))
