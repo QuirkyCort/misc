@@ -10,6 +10,7 @@ const getParameterDefinitions = () => {
   return [
     { name: 'type', type: 'choice', caption: 'Base Type', values: ['A', 'B'], captions: ['A', 'B'], initial: 'A' },
     { name: 'baseWidth', type: 'int', initial: 2, step: 1, min:1, caption: 'Base Width' },
+    { name: 'height', type: 'float', initial: 15.7, step: 0.1, min:8, caption: 'Height' },
     { name: 'm4', type: 'float', initial: 3.8, step: 0.1, caption: 'Diameter of M4 holes' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
     { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
@@ -53,20 +54,21 @@ const main = (params) => {
 
   const type = params.type;
   const baseWidth = params.baseWidth;
+  const height = params.height;
   const m4 = params.m4;
 
-  // Mounting points for sensor
-  solids.push(cuboid({size: [10, MG995_WIDTH, 8], center: [MG995_LENGTH/2+5, 0, 0]}))
-  solids.push(cuboid({size: [10, MG995_WIDTH, 8], center: [-(MG995_LENGTH/2+5), 0, 0]}))
+  // Mounting points for motor
+  solids.push(cuboid({size: [10, MG995_WIDTH, height], center: [MG995_LENGTH/2+5, 0, height/2-4]}))
+  solids.push(cuboid({size: [10, MG995_WIDTH, height], center: [-(MG995_LENGTH/2+5), 0, height/2-4]}))
 
-  holes.push(cylinder({radius: m4/2, height: 8, center: [MG995_HOLES_DIST/2, -5, 0], segments: 32}))
-  holes.push(cylinder({radius: m4/2, height: 8, center: [-MG995_HOLES_DIST/2, -5, 0], segments: 32}))
-  holes.push(cylinder({radius: m4/2, height: 8, center: [MG995_HOLES_DIST/2, 5, 0], segments: 32}))
-  holes.push(cylinder({radius: m4/2, height: 8, center: [-MG995_HOLES_DIST/2, 5, 0], segments: 32}))
+  holes.push(cylinder({radius: m4/2, height: height, center: [MG995_HOLES_DIST/2, -5, height/2-4], segments: 32}))
+  holes.push(cylinder({radius: m4/2, height: height, center: [-MG995_HOLES_DIST/2, -5, height/2-4], segments: 32}))
+  holes.push(cylinder({radius: m4/2, height: height, center: [MG995_HOLES_DIST/2, 5, height/2-4], segments: 32}))
+  holes.push(cylinder({radius: m4/2, height: height, center: [-MG995_HOLES_DIST/2, 5, height/2-4], segments: 32}))
 
   // Base
   solids.push(cuboid({size: [MG995_LENGTH+20, baseWidth*8, 8], center: [0, baseWidth*4+MG995_WIDTH/2, 0]}))
-  
+
   // Lego Holes
   let yOffset = MG995_WIDTH/2+4;
   if (type == 'A') {
