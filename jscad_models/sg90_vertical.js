@@ -6,22 +6,23 @@ const jscad = require('@jscad/modeling')
 const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid } = jscad.primitives
 
+const SG90_LENGTH = 23; // 22.5 + 0.5mm clearance
+const SG90_WIDTH = 12.3; // 11.8 + 0.5mm clearance
+const SG90_HOLES_DIST = 27.3;
+const SG90_WIRE_GAP_HEIGHT = 5;
+const SG90_BASE_HEIGHT = 16.7;
+
 const getParameterDefinitions = () => {
   return [
     { name: 'type', type: 'choice', caption: 'Base Type', values: ['A', 'B'], captions: ['A', 'B'], initial: 'A' },
     { name: 'baseWidth', type: 'int', initial: 2, step: 1, min:1, caption: 'Base Width' },
-    { name: 'height', type: 'float', initial: 15.7, step: 0.1, min:8, caption: 'Height' },
+    { name: 'height', type: 'float', initial: SG90_BASE_HEIGHT, step: 0.1, min:8, caption: 'Height' },
     { name: 'm2', type: 'float', initial: 1.6, step: 0.1, caption: 'Diameter of M2 holes' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
     { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
     { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
   ]
 }
-
-const SG90_LENGTH = 23; // 22.5 + 0.5mm clearance
-const SG90_WIDTH = 12.3; // 11.8 + 0.5mm clearance
-const SG90_HOLES_DIST = 27.3;
-const SG90_WIRE_GAP_HEIGHT = 5;
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -62,7 +63,7 @@ const main = (params) => {
   solids.push(cuboid({size: [5, SG90_WIDTH, height], center: [SG90_LENGTH/2+2.5, 0, height/2-4]}))
   solids.push(cuboid({size: [5, SG90_WIDTH, height], center: [-(SG90_LENGTH/2+2.5), 0, height/2-4]}))
   if (height > 15.7-6) { // Gap for cable
-    const holeHeight = height - (15.7 - SG90_WIRE_GAP_HEIGHT)
+    const holeHeight = height - (SG90_BASE_HEIGHT - SG90_WIRE_GAP_HEIGHT)
     const holeWidth = SG90_WIDTH/2+4.5/2
     holes.push(cuboid({size: [5, holeWidth, holeHeight], center: [SG90_LENGTH/2+2.5, -(SG90_WIDTH/2)+holeWidth/2, holeHeight/2-4]}))
     holes.push(cuboid({size: [5, holeWidth, holeHeight], center: [-(SG90_LENGTH/2+2.5), -(SG90_WIDTH/2)+holeWidth/2, holeHeight/2-4]}))
