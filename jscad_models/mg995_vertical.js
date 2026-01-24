@@ -10,7 +10,7 @@ const getParameterDefinitions = () => {
   return [
     { name: 'type', type: 'choice', caption: 'Base Type', values: ['A', 'B'], captions: ['A', 'B'], initial: 'A' },
     { name: 'baseWidth', type: 'int', initial: 2, step: 1, min:1, caption: 'Base Width' },
-    { name: 'height', type: 'float', initial: 15.7, step: 0.1, min:8, caption: 'Height' },
+    { name: 'height', type: 'float', initial: 27.8, step: 0.1, min:8, caption: 'Height' },
     { name: 'm4', type: 'float', initial: 3.8, step: 0.1, caption: 'Diameter of M4 holes' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
     { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
