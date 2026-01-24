@@ -10,6 +10,7 @@ const getParameterDefinitions = () => {
   return [
     { name: 'type', type: 'choice', caption: 'Base Type', values: ['A', 'B'], captions: ['A', 'B'], initial: 'A' },
     { name: 'baseWidth', type: 'int', initial: 2, step: 1, min:1, caption: 'Base Width' },
+    { name: 'height', type: 'float', initial: 15.7, step: 0.1, min:8, caption: 'Height' },
     { name: 'm2', type: 'float', initial: 1.6, step: 0.1, caption: 'Diameter of M2 holes' },
     { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
     { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
@@ -53,18 +54,19 @@ const main = (params) => {
 
   const type = params.type;
   const baseWidth = params.baseWidth;
+  const height = params.height;
   const m2 = params.m2;
 
-  // Mounting points for sensor
-  solids.push(cuboid({size: [5, SG90_WIDTH, 8], center: [SG90_LENGTH/2+2.5, 0, 0]}))
-  solids.push(cuboid({size: [5, SG90_WIDTH, 8], center: [-(SG90_LENGTH/2+2.5), 0, 0]}))
+  // Mounting points for motor
+  solids.push(cuboid({size: [5, SG90_WIDTH, height], center: [SG90_LENGTH/2+2.5, 0, height/2-4]}))
+  solids.push(cuboid({size: [5, SG90_WIDTH, height], center: [-(SG90_LENGTH/2+2.5), 0, height/2-4]}))
 
-  holes.push(cylinder({radius: m2/2, height: 8, center: [SG90_HOLES_DIST/2, 0, 0], segments: 32}))
-  holes.push(cylinder({radius: m2/2, height: 8, center: [-SG90_HOLES_DIST/2, 0, 0], segments: 32}))
+  holes.push(cylinder({radius: m2/2, height: height, center: [SG90_HOLES_DIST/2, 0, height/2-4], segments: 32}))
+  holes.push(cylinder({radius: m2/2, height: height, center: [-SG90_HOLES_DIST/2, 0, height/2-4], segments: 32}))
 
   // Base
   solids.push(cuboid({size: [SG90_LENGTH+10, baseWidth*8, 8], center: [0, baseWidth*4+SG90_WIDTH/2, 0]}))
-  
+
   // Lego Holes
   let yOffset = SG90_WIDTH/2+4;
   if (type == 'A') {
