@@ -3,23 +3,10 @@
  */
 
 const jscad = require('@jscad/modeling')
+
 const { union, subtract } = require('@jscad/modeling').booleans
-const { cylinder, cuboid } = jscad.primitives
-
-const getParameterDefinitions = () => {
-  return [
-    { name: 'height', type: 'float', initial: 23, caption: 'Overall height' },
-    { name: 'bigger', type: 'checkbox', checked: false, caption: 'Bigger base' },
-    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
-    { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
-    { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
-    { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
-  ]
-}
-
-const MOUNTING_Y_DIST = 23;
-const MOUNTING_X_DIST = 20;
-const MOUNTING_DIAMETER = 6;
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -30,7 +17,7 @@ const legoHole = (x, y, z, params) => {
   const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 32})
   const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
 
-  return union(center, top, bottom);
+  return union(center, union(top, bottom));
 }
 
 const legoAxle = (x, y, z, depth, params) => {
@@ -52,15 +39,33 @@ const legoAxle = (x, y, z, depth, params) => {
 }
 
 const merge = (solids, holes) => {
-  let solid = union(...solids)
+  let shape = solids[0];
 
-  if (holes.length > 0) {
-    let hole = union(...holes)
-    return subtract(solid, hole);
+  for (let i=1; i<solids.length; i++) {
+    shape = union(shape, solids[i])
   }
 
-  return solid;
+  for (let i=0; i<holes.length; i++) {
+    shape = subtract(shape, holes[i])
+  }
+
+  return shape;
 }
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'height', type: 'float', initial: 23, caption: 'Overall height' },
+    { name: 'bigger', type: 'checkbox', checked: false, caption: 'Bigger base' },
+    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
+    { name: 'legoInnerDia', type: 'float', initial: 5, step: 0.1, caption: 'Lego: Inner diameter of hole' },
+    { name: 'legoOuterDia', type: 'float', initial: 6.4, step: 0.1, caption: 'Lego: Outer diameter of hole' },
+    { name: 'legoHeight', type: 'float', initial: 1.9, step: 0.1, caption: 'Lego: Height of outer diameter' },
+  ]
+}
+
+const MOUNTING_Y_DIST = 23;
+const MOUNTING_X_DIST = 20;
+const MOUNTING_DIAMETER = 6;
 
 const main = (params) => {
   const solids = [];

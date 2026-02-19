@@ -3,35 +3,39 @@
  */
 
 const jscad = require('@jscad/modeling')
+
 const { union, subtract } = require('@jscad/modeling').booleans
-const { cylinder, cuboid } = jscad.primitives
-
-const getParameterDefinitions = () => {
-  return [
-    { name: 'width', type: 'int', initial: 5, step: 1, min: 5, caption: 'Base Width in Lego units (8mm)' },
-    { name: 'length', type: 'int', initial: 5, step: 1, min:1, caption: 'Base Length in Lego units (8mm)' },
-    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
-    { name: 'legoInnerDia', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Inner diameter of hole' },
-    { name: 'legoOuterDia', type: 'float', initial: 6.2, step: 0.1, caption: 'Lego: Outer diameter of hole' },
-    { name: 'legoHeight', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Height of outer diameter' },
-  ]
-}
-
-const MOUNTING_HOLES_Y = 14;
-const MOUNTING_HOLES_X = 16;
-const MOUNTING_HOLES_Y_OFFSET = 11;
-const BRACKET_LENGTH = 34;
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
   const outer = params.legoOuterDia
   const height = params.legoHeight
 
-  const center = cylinder({radius: inner/2, height: 8, center: [x, y, z], segments: 64})
-  const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 64})
-  const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 64})
+  const center = cylinder({radius: inner/2, height: 8, center: [x, y, z], segments: 32})
+  const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 32})
+  const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
 
   return union(center, union(top, bottom));
+}
+
+const legoAxle = (x, y, z, depth, params) => {
+  const solids = [];
+  const holes = [];
+
+  const length = params.legoAxleLength
+  const width = params.legoAxleWidth
+  const chamfer = params.legoAxleChamfer
+
+  solids.push(cuboid({size: [length, width, depth], center: [0, 0, 0]}))
+  solids.push(cuboid({size: [width, length, depth], center: [0, 0, 0]}))
+  solids.push(translate([width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+
+  return translate([x, y, z], merge(solids, holes))
 }
 
 const merge = (solids, holes) => {
@@ -47,6 +51,22 @@ const merge = (solids, holes) => {
 
   return shape;
 }
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'width', type: 'int', initial: 5, step: 1, min: 5, caption: 'Base Width in Lego units (8mm)' },
+    { name: 'length', type: 'int', initial: 5, step: 1, min:1, caption: 'Base Length in Lego units (8mm)' },
+    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
+    { name: 'legoInnerDia', type: 'float', initial: 5, step: 0.1, caption: 'Lego: Inner diameter of hole' },
+    { name: 'legoOuterDia', type: 'float', initial: 6.4, step: 0.1, caption: 'Lego: Outer diameter of hole' },
+    { name: 'legoHeight', type: 'float', initial: 1.9, step: 0.1, caption: 'Lego: Height of outer diameter' },
+  ]
+}
+
+const MOUNTING_HOLES_Y = 14;
+const MOUNTING_HOLES_X = 16;
+const MOUNTING_HOLES_Y_OFFSET = 11;
+const BRACKET_LENGTH = 34;
 
 const main = (params) => {
   const solids = [];

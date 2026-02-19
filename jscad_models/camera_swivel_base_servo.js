@@ -1,21 +1,41 @@
 /*
- * Base for ESP32-Cam (Does not include adapter)
+ * Base for camera (Does not include adapter)
  */
 
 const jscad = require('@jscad/modeling')
-const { union, subtract } = require('@jscad/modeling').booleans
-const { rotateX, rotateY, translate } = require('@jscad/modeling').transforms
-const { cylinder, cuboid } = jscad.primitives
 
-const getParameterDefinitions = () => {
-  return [
-    { name: 'servoHole', type: 'float', initial: 1.5, caption: 'Diameter of servo screw holes (for SG60 and MG995 A)' },
-    { name: 'type', type: 'choice', caption: 'Base type', values: ['SG90', 'MG995 A', 'MG995 B'], captions: ['SG90', 'MG995 A', 'MG995 B'], initial: 'SG90' },
-    { name: 'swivelType', type: 'choice', caption: 'Swivel type', values: ['Horizontal', 'Vertical', 'Slanted'], captions: ['Horizontal', 'Vertical', 'Slanted'], initial: 'Horizontal' },
-    { name: 'swivelHeight', type: 'float', initial: 20, step: 0.1, caption: 'Swivel Mount Height/Length' },
-    { name: 'swivelOffset', type: 'float', initial: 9, step: 0.1, caption: 'Swivel Mount Offset (for Vertical only)' },
-    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
-  ]
+const { union, subtract } = require('@jscad/modeling').booleans
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
+
+const legoHole = (x, y, z, params) => {
+  const inner = params.legoInnerDia
+  const outer = params.legoOuterDia
+  const height = params.legoHeight
+
+  const center = cylinder({radius: inner/2, height: 8, center: [x, y, z], segments: 32})
+  const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 32})
+  const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
+
+  return union(center, union(top, bottom));
+}
+
+const legoAxle = (x, y, z, depth, params) => {
+  const solids = [];
+  const holes = [];
+
+  const length = params.legoAxleLength
+  const width = params.legoAxleWidth
+  const chamfer = params.legoAxleChamfer
+
+  solids.push(cuboid({size: [length, width, depth], center: [0, 0, 0]}))
+  solids.push(cuboid({size: [width, length, depth], center: [0, 0, 0]}))
+  solids.push(translate([width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+
+  return translate([x, y, z], merge(solids, holes))
 }
 
 const merge = (solids, holes) => {
@@ -30,6 +50,17 @@ const merge = (solids, holes) => {
   }
 
   return shape;
+}
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'servoHole', type: 'float', initial: 1.5, caption: 'Diameter of servo screw holes (for SG60 and MG995 A)' },
+    { name: 'type', type: 'choice', caption: 'Base type', values: ['SG90', 'MG995 A', 'MG995 B'], captions: ['SG90', 'MG995 A', 'MG995 B'], initial: 'SG90' },
+    { name: 'swivelType', type: 'choice', caption: 'Swivel type', values: ['Horizontal', 'Vertical', 'Slanted'], captions: ['Horizontal', 'Vertical', 'Slanted'], initial: 'Horizontal' },
+    { name: 'swivelHeight', type: 'float', initial: 20, step: 0.1, caption: 'Swivel Mount Height/Length' },
+    { name: 'swivelOffset', type: 'float', initial: 9, step: 0.1, caption: 'Swivel Mount Offset (for Vertical only)' },
+    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
+  ]
 }
 
 const SG90_BASE_LENGTH = 28;
@@ -63,8 +94,6 @@ const slanted_swivel = (params) => {
 
   return merge(solids, holes);
 }
-
-
 
 const main = (params) => {
   const solids = [];

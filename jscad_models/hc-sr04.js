@@ -3,23 +3,10 @@
  */
 
 const jscad = require('@jscad/modeling')
-const { union, subtract } = require('@jscad/modeling').booleans
-const { rotateX, translate } = require('@jscad/modeling').transforms
-const { cylinder, cuboid } = jscad.primitives
 
-const getParameterDefinitions = () => {
-  return [
-    { name: 'height', type: 'float', initial: 30, caption: 'Height (base to top of HC-SR04)' },
-    { name: 'diameter', type: 'float', initial: 16, step: 0.1, caption: 'Diameter of sensors' },
-    { name: 'width', type: 'float', initial: 42, step: 0.1, caption: 'Width of sensors (measured between outer edges)' },
-    { name: 'screwOffset', type: 'float', initial: 3.5, step: 0.1, caption: 'Distance between securing screw and sensor edge' },
-    { name: 'm3', type: 'float', initial: 2.8, caption: 'Diameter of M3 holes' },
-    { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'B1', 'B2'], captions: ['A1', 'A2', 'B1', 'B2'], initial: 'A1' },
-    { name: 'legoInnerDia', type: 'float', initial: 4.8, caption: 'Lego: Inner diameter of hole' },
-    { name: 'legoOuterDia', type: 'float', initial: 6.2, caption: 'Lego: Outer diameter of hole' },
-    { name: 'legoHeight', type: 'float', initial: 0.8, caption: 'Lego: Height of outer diameter' },
-  ]
-}
+const { union, subtract } = require('@jscad/modeling').booleans
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -31,6 +18,24 @@ const legoHole = (x, y, z, params) => {
   const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
 
   return union(center, union(top, bottom));
+}
+
+const legoAxle = (x, y, z, depth, params) => {
+  const solids = [];
+  const holes = [];
+
+  const length = params.legoAxleLength
+  const width = params.legoAxleWidth
+  const chamfer = params.legoAxleChamfer
+
+  solids.push(cuboid({size: [length, width, depth], center: [0, 0, 0]}))
+  solids.push(cuboid({size: [width, length, depth], center: [0, 0, 0]}))
+  solids.push(translate([width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+
+  return translate([x, y, z], merge(solids, holes))
 }
 
 const merge = (solids, holes) => {
@@ -45,6 +50,20 @@ const merge = (solids, holes) => {
   }
 
   return shape;
+}
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'height', type: 'float', initial: 30, caption: 'Height (base to top of HC-SR04)' },
+    { name: 'diameter', type: 'float', initial: 16, step: 0.1, caption: 'Diameter of sensors' },
+    { name: 'width', type: 'float', initial: 42, step: 0.1, caption: 'Width of sensors (measured between outer edges)' },
+    { name: 'screwOffset', type: 'float', initial: 3.5, step: 0.1, caption: 'Distance between securing screw and sensor edge' },
+    { name: 'm3', type: 'float', initial: 2.8, caption: 'Diameter of M3 holes' },
+    { name: 'type', type: 'choice', caption: 'Base type', values: ['A1', 'A2', 'B1', 'B2'], captions: ['A1', 'A2', 'B1', 'B2'], initial: 'A1' },
+    { name: 'legoInnerDia', type: 'float', initial: 5, step: 0.1, caption: 'Lego: Inner diameter of hole' },
+    { name: 'legoOuterDia', type: 'float', initial: 6.4, step: 0.1, caption: 'Lego: Outer diameter of hole' },
+    { name: 'legoHeight', type: 'float', initial: 1.9, step: 0.1, caption: 'Lego: Height of outer diameter' },
+  ]
 }
 
 const THICKNESS = 5;

@@ -3,38 +3,12 @@
  */
 
 const jscad = require('@jscad/modeling')
-const { union, subtract } = require('@jscad/modeling').booleans
-const { cylinder, cuboid, polygon } = jscad.primitives
-const { rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 const { extrudeLinear } = require('@jscad/modeling').extrusions
 const { measureBoundingBox } = require('@jscad/modeling').measurements
 
-const ESP32_Length = 41;
-const FRONT_THICKNESS = 2;
-const BACK_THICKNESS = 2;
-const SCREW_OFFSET = 3.5;
-const SCREW_BASE_WIDTH = 7;
-const SCREW_BASE_THICKNESS = 7;
-const FRONT_PCB_SUPPORT_THICKNESS = 2;
-const FRONT_PCB_SUPPORT_LENGTH = 4;
-const SWIVEL_THICKNESS = 4;
-const SWIVEL_LENGTH = 11;
-const LED_HOLE_X_OFFSET = -10;
-const LED_HOLE_Y_OFFSET = -11;
-
-const getParameterDefinitions = () => {
-  return [
-    { name: 'camWidth', type: 'float', initial: 9, step: 0.1, caption: 'Camera Width' },
-    { name: 'camHeight', type: 'float', initial: 9, step: 0.1, caption: 'Camera Height' },
-    { name: 'camYOffset', type: 'float', initial: 10, step: 0.1, caption: 'Camera Y Offset' },
-    { name: 'swivelXOffset', type: 'float', initial: 4, step: 0.1, caption: 'Swivel Mount X Offset' },
-    { name: 'swivelYOffset', type: 'float', initial: 12, step: 0.1, caption: 'Swivel Mount Y Offset' },
-    { name: 'swivelHeight', type: 'float', initial: 8, step: 0.1, caption: 'Swivel Mount Height' },
-    { name: 'ledHoleRadius', type: 'float', initial: 7, step: 0.5, caption: 'Radius of LED Hole' },
-    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
-    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
-  ]
-}
+const { union, subtract } = require('@jscad/modeling').booleans
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -78,6 +52,33 @@ const merge = (solids, holes) => {
   }
 
   return shape;
+}
+
+const ESP32_Length = 41;
+const FRONT_THICKNESS = 2;
+const BACK_THICKNESS = 2;
+const SCREW_OFFSET = 3.5;
+const SCREW_BASE_WIDTH = 7;
+const SCREW_BASE_THICKNESS = 7;
+const FRONT_PCB_SUPPORT_THICKNESS = 2;
+const FRONT_PCB_SUPPORT_LENGTH = 4;
+const SWIVEL_THICKNESS = 4;
+const SWIVEL_LENGTH = 11;
+const LED_HOLE_X_OFFSET = -10;
+const LED_HOLE_Y_OFFSET = -11;
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'camWidth', type: 'float', initial: 9, step: 0.1, caption: 'Camera Width' },
+    { name: 'camHeight', type: 'float', initial: 9, step: 0.1, caption: 'Camera Height' },
+    { name: 'camYOffset', type: 'float', initial: 10, step: 0.1, caption: 'Camera Y Offset' },
+    { name: 'swivelXOffset', type: 'float', initial: 4, step: 0.1, caption: 'Swivel Mount X Offset' },
+    { name: 'swivelYOffset', type: 'float', initial: 12, step: 0.1, caption: 'Swivel Mount Y Offset' },
+    { name: 'swivelHeight', type: 'float', initial: 8, step: 0.1, caption: 'Swivel Mount Height' },
+    { name: 'ledHoleRadius', type: 'float', initial: 7, step: 0.5, caption: 'Radius of LED Hole' },
+    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Diameter of M3 holes' },
+    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
+  ]
 }
 
 const front = (params) => {

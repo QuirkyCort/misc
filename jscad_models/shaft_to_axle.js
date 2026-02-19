@@ -3,23 +3,10 @@
  */
 
 const jscad = require('@jscad/modeling')
-const { union, subtract } = require('@jscad/modeling').booleans
-const { cylinder, cuboid } = jscad.primitives
-const { rotateX, rotateZ, translate } = require('@jscad/modeling').transforms
 
-const getParameterDefinitions = () => {
-  return [
-    { name: 'diameter', type: 'float', initial: 9, caption: 'Outer diameter' },
-    { name: 'shaft_diameter', type: 'float', initial: 5, caption: 'Shaft diameter' },
-    { name: 'd_depth', type: 'float', initial: 0.5, caption: 'Depth of flat surface on shaft (set to 0 if shaft does not have a flat)' },
-    { name: 'shaft_depth', type: 'float', initial: 16, caption: 'Depth of shaft hole' },
-    { name: 'lego_depth', type: 'float', initial: 16, caption: 'Depth of lego shaft' },
-    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Hole for M3 screw (set to 0 if not needed)' },
-    { name: 'legoAxleLength', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Axle Length' },
-    { name: 'legoAxleWidth', type: 'float', initial: 1.8, step: 0.1, caption: 'Lego: Axle Width' },
-    { name: 'legoAxleChamfer', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Inner Chamfer Size' },
-  ]
-}
+const { union, subtract } = require('@jscad/modeling').booleans
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -63,6 +50,20 @@ const merge = (solids, holes) => {
   }
 
   return shape;
+}
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'diameter', type: 'float', initial: 9, caption: 'Outer diameter' },
+    { name: 'shaft_diameter', type: 'float', initial: 5, caption: 'Shaft diameter' },
+    { name: 'd_depth', type: 'float', initial: 0.5, caption: 'Depth of flat surface on shaft (set to 0 if shaft does not have a flat)' },
+    { name: 'shaft_depth', type: 'float', initial: 16, caption: 'Depth of shaft hole' },
+    { name: 'lego_depth', type: 'float', initial: 16, caption: 'Depth of lego shaft' },
+    { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Hole for M3 screw (set to 0 if not needed)' },
+    { name: 'legoAxleLength', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Axle Length' },
+    { name: 'legoAxleWidth', type: 'float', initial: 1.8, step: 0.1, caption: 'Lego: Axle Width' },
+    { name: 'legoAxleChamfer', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Inner Chamfer Size' },
+  ]
 }
 
 const d_shaft = (shaft_diameter, d_depth, shaft_depth) => {

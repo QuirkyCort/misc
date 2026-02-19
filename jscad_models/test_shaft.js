@@ -3,16 +3,10 @@
  */
 
 const jscad = require('@jscad/modeling')
-const { union, subtract } = require('@jscad/modeling').booleans
-const { cylinder, cuboid } = jscad.primitives
-const { rotateX, rotateZ, translate } = require('@jscad/modeling').transforms
 
-const getParameterDefinitions = () => {
-  return [
-    { name: 'shaft_diameter', type: 'float', initial: 5, caption: 'Shaft diameter' },
-    { name: 'd_depth', type: 'float', initial: 0.5, caption: 'Depth of flat surface on shaft. To facilitate testing of shaft diameter, half of the model will not have flat.' },
-  ]
-}
+const { union, subtract } = require('@jscad/modeling').booleans
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -56,6 +50,13 @@ const merge = (solids, holes) => {
   }
 
   return shape;
+}
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'shaft_diameter', type: 'float', initial: 5, caption: 'Shaft diameter' },
+    { name: 'd_depth', type: 'float', initial: 0.5, caption: 'Depth of flat surface on shaft. To facilitate testing of shaft diameter, half of the model will not have flat.' },
+  ]
 }
 
 const d_shaft = (shaft_diameter, d_depth, shaft_depth) => {

@@ -3,17 +3,10 @@
  */
 
 const jscad = require('@jscad/modeling')
-const { union, subtract } = require('@jscad/modeling').booleans
-const { cylinder, cuboid } = jscad.primitives
-const { rotateX, rotateZ, translate } = require('@jscad/modeling').transforms
 
-const getParameterDefinitions = () => {
-  return [
-    { name: 'legoAxleLength', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Axle Length' },
-    { name: 'legoAxleWidth', type: 'float', initial: 1.8, step: 0.1, caption: 'Lego: Axle Width' },
-    { name: 'legoAxleChamfer', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Inner Chamfer Size' },
-  ]
-}
+const { union, subtract } = require('@jscad/modeling').booleans
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -57,6 +50,14 @@ const merge = (solids, holes) => {
   }
 
   return shape;
+}
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'legoAxleLength', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Axle Length' },
+    { name: 'legoAxleWidth', type: 'float', initial: 1.8, step: 0.1, caption: 'Lego: Axle Width' },
+    { name: 'legoAxleChamfer', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Inner Chamfer Size' },
+  ]
 }
 
 const main = (params) => {

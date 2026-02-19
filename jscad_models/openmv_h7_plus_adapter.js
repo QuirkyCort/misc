@@ -3,26 +3,10 @@
  */
 
 const jscad = require('@jscad/modeling')
+
 const { union, subtract } = require('@jscad/modeling').booleans
 const { cylinder, cuboid, polygon } = jscad.primitives
-const { rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
-const { extrudeLinear } = require('@jscad/modeling').extrusions
-const { measureBoundingBox } = require('@jscad/modeling').measurements
-
-const SWIVEL_THICKNESS = 4;
-const SWIVEL_LENGTH = 11;
-const BASE_THICKNESS = 4;
-const MOUNTING_THICKNESS = 3;
-
-const getParameterDefinitions = () => {
-  return [
-    { name: 'swivelXOffset', type: 'float', initial: 4, step: 0.1, caption: 'Swivel Mount X Offset' },
-    { name: 'swivelHeight', type: 'float', initial: 12, step: 0.1, caption: 'Swivel Mount Height' },
-    { name: 'mountingLength', type: 'float', initial: 29.46, step: 0.1, caption: 'Camera Mount Length' },
-    { name: 'mountingHeight', type: 'float', initial: 3, step: 0.1, caption: 'Camera Mount Height' },
-    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
-  ]
-}
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
 
 const legoHole = (x, y, z, params) => {
   const inner = params.legoInnerDia
@@ -66,6 +50,21 @@ const merge = (solids, holes) => {
   }
 
   return shape;
+}
+
+const SWIVEL_THICKNESS = 4;
+const SWIVEL_LENGTH = 11;
+const BASE_THICKNESS = 4;
+const MOUNTING_THICKNESS = 3;
+
+const getParameterDefinitions = () => {
+  return [
+    { name: 'swivelXOffset', type: 'float', initial: 4, step: 0.1, caption: 'Swivel Mount X Offset' },
+    { name: 'swivelHeight', type: 'float', initial: 12, step: 0.1, caption: 'Swivel Mount Height' },
+    { name: 'mountingLength', type: 'float', initial: 29.46, step: 0.1, caption: 'Camera Mount Length' },
+    { name: 'mountingHeight', type: 'float', initial: 3, step: 0.1, caption: 'Camera Mount Height' },
+    { name: 'm3_hole', type: 'float', initial: 3.4, step: 0.1, caption: 'Pass through hole for M3 screw (not secured)' },
+  ]
 }
 
 const swivel = (params) => {

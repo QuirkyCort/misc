@@ -3,9 +3,54 @@
  */
 
 const jscad = require('@jscad/modeling')
+
 const { union, subtract } = require('@jscad/modeling').booleans
-const { rotateX, rotateY, translate } = require('@jscad/modeling').transforms
-const { cylinder, cuboid } = jscad.primitives
+const { cylinder, cuboid, polygon } = jscad.primitives
+const { rotateX, rotateY, rotateZ, translate } = require('@jscad/modeling').transforms
+
+const legoHole = (x, y, z, params) => {
+  const inner = params.legoInnerDia
+  const outer = params.legoOuterDia
+  const height = params.legoHeight
+
+  const center = cylinder({radius: inner/2, height: 8, center: [x, y, z], segments: 32})
+  const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 32})
+  const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
+
+  return union(center, union(top, bottom));
+}
+
+const legoAxle = (x, y, z, depth, params) => {
+  const solids = [];
+  const holes = [];
+
+  const length = params.legoAxleLength
+  const width = params.legoAxleWidth
+  const chamfer = params.legoAxleChamfer
+
+  solids.push(cuboid({size: [length, width, depth], center: [0, 0, 0]}))
+  solids.push(cuboid({size: [width, length, depth], center: [0, 0, 0]}))
+  solids.push(translate([width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+  solids.push(translate([-width/2, -width/2, 0], rotateZ(Math.PI/4, cuboid({size: [chamfer, chamfer, depth]}))))
+
+  return translate([x, y, z], merge(solids, holes))
+}
+
+const merge = (solids, holes) => {
+  let shape = solids[0];
+
+  for (let i=1; i<solids.length; i++) {
+    shape = union(shape, solids[i])
+  }
+
+  for (let i=0; i<holes.length; i++) {
+    shape = subtract(shape, holes[i])
+  }
+
+  return shape;
+}
 
 const MOUNTING_HOLES_DISTANCE = 13.2;
 const MARGIN = 3;
@@ -22,32 +67,6 @@ const getParameterDefinitions = () => {
     { name: 'swivelXOffset', type: 'float', initial: 4, step: 0.1, caption: 'Swivel Mount X Offset' },
     { name: 'swivelLength', type: 'float', initial: 12, step: 0.1, caption: 'Swivel Mount Length' },
   ]
-}
-
-const legoHole = (x, y, z, params) => {
-  const inner = params.legoInnerDia
-  const outer = params.legoOuterDia
-  const height = params.legoHeight
-
-  const center = cylinder({radius: inner/2, height: 8, center: [x, y, z], segments: 32})
-  const top = cylinder({radius: outer/2, height: height, center: [x, y, z + 4 - height / 2], segments: 32})
-  const bottom = cylinder({radius: outer/2, height: height, center: [x, y, z - 4 + height / 2], segments: 32})
-
-  return union(center, union(top, bottom));
-}
-
-const merge = (solids, holes) => {
-  let shape = solids[0];
-
-  for (let i=1; i<solids.length; i++) {
-    shape = union(shape, solids[i])
-  }
-
-  for (let i=0; i<holes.length; i++) {
-    shape = subtract(shape, holes[i])
-  }
-
-  return shape;
 }
 
 const main = (params) => {
