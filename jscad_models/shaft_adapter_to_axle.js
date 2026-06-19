@@ -60,9 +60,9 @@ const getParameterDefinitions = () => {
     { name: 'm3', type: 'float', initial: 2.8, step: 0.1, caption: 'Hole for M3 screw (set to 0 if not needed)' },
     { name: 'height', type: 'float', initial: 8, caption: 'Height' },
     { name: 'protrusion', type: 'float', initial: 8, caption: 'Protrusion height' },
-    { name: 'legoAxleLength', type: 'float', initial: 4.8, step: 0.1, caption: 'Lego: Axle Length' },
-    { name: 'legoAxleWidth', type: 'float', initial: 1.8, step: 0.1, caption: 'Lego: Axle Width' },
-    { name: 'legoAxleChamfer', type: 'float', initial: 0.8, step: 0.1, caption: 'Lego: Inner Chamfer Size' },
+    { name: 'legoAxleLength', type: 'float', initial: 5, step: 0.1, caption: 'Lego: Axle Length' },
+    { name: 'legoAxleWidth', type: 'float', initial: 1.9, step: 0.1, caption: 'Lego: Axle Width' },
+    { name: 'legoAxleChamfer', type: 'float', initial: 0.9, step: 0.1, caption: 'Lego: Inner Chamfer Size' },
   ]
 }
 
