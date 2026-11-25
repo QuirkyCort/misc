@@ -87,6 +87,7 @@
             <select id="format">
                 <option value="yuv422">YUV422</option>
                 <option value="rgb565">RGB565</option>
+                <option value="rgb888">RGB888</option>
                 <option value="grayscale">Grayscale</option>
             </select><br>
             Display Scale:<input id="scale" type="number" value="2" step="1">
@@ -185,6 +186,23 @@
                     let r = buf[rgb565_pos] & 0xF8;
                     let g = ((buf[rgb565_pos] & 0x07) << 5) | ((buf[rgb565_pos + 1] & 0xE0) >> 3);
                     let b = (buf[rgb565_pos + 1] & 0x1F) << 3;
+
+                    data[canvas_pos] = r;
+                    data[canvas_pos + 1] = g;
+                    data[canvas_pos + 2] = b;
+                    data[canvas_pos + 3] = 255;
+                }
+            }
+        } else if (format == 'rgb888') {
+            for (let y=0; y<height; y++) {
+                for (let x=0; x<width; x++) {
+                    let pos = (y * width + x);
+                    let rgb888_pos = pos * 3 ;
+                    let canvas_pos = pos * 4;
+
+                    let r = buf[rgb888_pos];
+                    let g = buf[rgb888_pos + 1];
+                    let b = buf[rgb888_pos + 2];
 
                     data[canvas_pos] = r;
                     data[canvas_pos + 1] = g;
