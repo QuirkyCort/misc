@@ -69,6 +69,10 @@
     <p>You must set the width and height correctly before loading the YUV file.</p>
     Width:<input id="width" type="number" value="160" step="1">
     Height:<input id="height" type="number" value="120" step="1">
+    <select id="format">
+        <option value="yuv422">YUV422</option>
+        <option value="yuv444">YUV444</option>
+    </select>
     <input id="file" type="file">
     <br><br>
 
@@ -107,7 +111,8 @@
 
   <script>
     let raw;
-    let yuv;
+    let yuv444;
+    let yuvBlurred;
     let width;
     let height;
 
@@ -119,7 +124,71 @@
         return outBuf;
     }
 
-    function gaussian_3x3_yuv(buf, w, h) {
+    function yuv422to444(buf) {
+        let outBuf = [];
+        for (let i=0; i<buf.length; i+=4) {
+            outBuf.push(buf[i]);
+            outBuf.push(buf[i+1]);
+            outBuf.push(buf[i+3]);
+            outBuf.push(buf[i+2]);
+            outBuf.push(buf[i+1]);
+            outBuf.push(buf[i+3]);
+        }
+        return outBuf;
+    }
+
+    function gaussian_3x3_yuv444(buf, w, h) {
+        let blurred = [];
+        for (let i=0; i<w*h*3; i++) {
+            blurred.push(0);
+        }
+
+        for (let y=0; y<height; y++) {
+            let row = y * width * 3;
+            let row_m1 = y - 1;
+            let row_p1 = y + 1;
+            if (row_m1 < 0) {
+                row_m1 *= -1;
+            } else if (row_p1 > height - 1) {
+                row_p1 = 2 * height - row_p1 - 2;
+            }
+            row_m1 *= width * 3;
+            row_p1 *= width * 3;
+
+            for (x=0; x<width; x++) {
+                x2 = x * 3;
+                let pos = row + x2;
+                let x_m1 = x-1;
+                let x_p1 = x+1;
+                if (x_m1 < 0) {
+                    x_m1 *= -1
+                } else if (x_p1 > width - 1) {
+                    x_p1 = 2 * width - x_p1 - 2;
+                }
+                x_m1 *= 3;
+                x_p1 *= 3;
+
+                let cy = 4 * buf[pos];
+                cy += 2 * (buf[row + x_m1] + buf[row + x_p1] + buf[row_m1 + x2] + buf[row_p1 + x2]);
+                cy += buf[row_m1 + x_m1] + buf[row_m1 + x_p1] + buf[row_p1 + x_m1] + buf[row_p1 + x_p1];
+                blurred[pos] = Math.floor(cy / 16);
+
+                let cu = 4 * buf[pos + 1];
+                cu += 2 * (buf[row + x_m1 + 1] + buf[row + x_p1 + 1] + buf[row_m1 + x2 + 1] + buf[row_p1 + x2 + 1]);
+                cu += buf[row_m1 + x_m1 + 1] + buf[row_m1 + x_p1 + 1] + buf[row_p1 + x_m1 + 1] + buf[row_p1 + x_p1 + 1];
+                blurred[pos + 1] = Math.floor(cu / 16);
+
+                let cv = 4 * buf[pos + 2];
+                cv += 2 * (buf[row + x_m1 + 2] + buf[row + x_p1 + 2] + buf[row_m1 + x2 + 2] + buf[row_p1 + x2 + 2]);
+                cv += buf[row_m1 + x_m1 + 2] + buf[row_m1 + x_p1 + 2] + buf[row_p1 + x_m1 + 2] + buf[row_p1 + x_p1 + 2];
+                blurred[pos + 2] = Math.floor(cv / 16);
+            }
+        }
+
+        return blurred
+    }
+
+    function gaussian_3x3_yuv422(buf, w, h) {
         let blurred = [];
         for (let i=0; i<w*h*2; i++) {
             blurred.push(buf[i]);
@@ -254,6 +323,91 @@
         return results;
     }
 
+    function find_blobs_yuv444(buf, width, height, thresholds, pixelsThreshold) {
+        let blobs = {};
+        let groupings = [];
+        for (let y=0; y<Math.floor(height/2); y++) {
+            let row = [];
+            for (let x=0; x<Math.floor(width/2); x++) {
+                row.push(0);
+            }
+            groupings.push(row);
+        }
+        let next_group = 1
+        let threshold0 = thresholds[0];
+        let threshold1 = thresholds[1];
+        let threshold2 = thresholds[2];
+        let threshold3 = thresholds[3];
+        let threshold4 = thresholds[4];
+        let threshold5 = thresholds[5];
+
+        for (let y=0; y<Math.floor(height/2); y++) {
+            let row = y * 2 * width;
+            for (let x=0; x<Math.floor(width/2); x++) {
+                let pos = (row + x * 2) * 3;
+                
+                if (threshold0 <= buf[pos] && buf[pos]<= threshold1 && threshold2 <= buf[pos+1] && buf[pos+1] <= threshold3 && threshold4 <= buf[pos+2] && buf[pos+2] <= threshold5) {
+                    let left = 0;
+                    let top = 0;
+                    if (x != 0) {
+                        left = groupings[y][x-1];
+                    }
+                    if (y != 0) {
+                        top = groupings[y-1][x];
+                    }
+
+                    if (left == 0 && top == 0) {
+                        groupings[y][x] = next_group;
+                        blobs[next_group] = [new Set([next_group]), 1, x, y, x, x, y, y];
+                        next_group += 1;
+                    } else if (left != 0) {
+                        groupings[y][x] = left;
+                        blob = blobs[left];
+                        blob[1] += 1;
+                        blob[2] += x;
+                        blob[3] += y;
+                        if (x < blob[4]) {
+                            blob[4] = x;
+                        } else if (x > blob[5]) {
+                            blob[5] = x;
+                        }
+                        if (y < blob[6]) {
+                            blob[6] = y;
+                        } else if (y > blob[7]) {
+                            blob[7] = y;
+                        }
+
+                        if (top != 0) {
+                            if (left > top) {
+                                blobs[top][0].add(left);
+                            } else if (top > left) {
+                                blob[0].add(top);
+                            }
+                        }
+                    } else if (top != 0) {
+                        groupings[y][x] = top;
+                        blob = blobs[top];
+                        blob[1] += 1;
+                        blob[2] += x;
+                        blob[3] += y;
+                        if (x < blob[4]) {
+                            blob[4] = x;
+                        } else if (x > blob[5]) {
+                            blob[5] = x;
+                        }
+                        if (y < blob[6]) {
+                            blob[6] = y;
+                        } else if (y > blob[7]) {
+                            blob[7] = y;
+                        }
+                    }
+                }
+            }
+        }
+
+        return _process_blobs(blobs, pixelsThreshold);
+    }
+
     function find_blobs_yuv422(buf, width, height, thresholds, pixelsThreshold) {
         let blobs = {};
         let groupings = [];
@@ -339,7 +493,41 @@
         return _process_blobs(blobs, pixelsThreshold);
     }
 
-    function drawYUV() {
+    function drawYUV444() {
+        let imageCanvas = document.getElementById('image');
+        imageCanvas.width = width;
+        imageCanvas.height = height;
+
+        imageCanvas.width = width;
+        imageCanvas.height = height;
+        imageCanvas.style.height = height / width * imageCanvas.clientWidth + 'px';
+
+        let ctx = imageCanvas.getContext('2d');
+
+        const imageData = ctx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+        const data = imageData.data;
+        for (let y=0; y<height; y++) {
+            for (let x=0; x<width; x++) {
+                let pos = (y * width + x);
+                let yuv_pos = pos * 3 ;
+                let canvas_pos = pos * 4;
+
+                let cy = yuvBlurred[yuv_pos];
+                let cu = yuvBlurred[yuv_pos + 1];
+                let cv = yuvBlurred[yuv_pos + 2];
+
+                let rgb = yuv2rgb_jpeg(cy, cu, cv);
+
+                data[canvas_pos] = rgb[0];
+                data[canvas_pos + 1] = rgb[1];
+                data[canvas_pos + 2] = rgb[2];
+                data[canvas_pos + 3] = 255;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+    }
+
+    function drawYUV422() {
         let imageCanvas = document.getElementById('image');
         imageCanvas.width = width;
         imageCanvas.height = height;
@@ -403,7 +591,7 @@
 
         let ctx = thresholdCanvas.getContext('2d');
 
-        if (! yuv) {
+        if (! yuv444) {
             return
         }
 
@@ -442,6 +630,59 @@
         ctx.putImageData(imageData, 0, 0);
     }
 
+    function drawThreshold444() {
+        let yMin = parseInt(document.getElementById('y_min').value);
+        let yMax = parseInt(document.getElementById('y_max').value);
+        let uMin = parseInt(document.getElementById('u_min').value);
+        let uMax = parseInt(document.getElementById('u_max').value);
+        let vMin = parseInt(document.getElementById('v_min').value);
+        let vMax = parseInt(document.getElementById('v_max').value);
+        let thresholdCanvas = document.getElementById('threshold');
+        let thresholdOverlayCanvas = document.getElementById('threshold_overlay');
+
+        thresholdCanvas.width = width;
+        thresholdCanvas.height = height;
+        thresholdOverlayCanvas.width = width;
+        thresholdOverlayCanvas.height = height;
+
+        thresholdCanvas.width = width;
+        thresholdCanvas.height = height;
+        thresholdCanvas.style.height = height / width * thresholdCanvas.clientWidth + 'px';
+        thresholdOverlayCanvas.width = width;
+        thresholdOverlayCanvas.height = height;
+        thresholdOverlayCanvas.style.height = height / width * thresholdOverlayCanvas.clientWidth + 'px';
+
+        let ctx = thresholdCanvas.getContext('2d');
+
+        if (! yuv444) {
+            return
+        }
+
+        const imageData = ctx.getImageData(0, 0, thresholdCanvas.width, thresholdCanvas.height);
+        const data = imageData.data;
+        for (let y=0; y<height; y++) {
+            for (let x=0; x<width; x++) {
+                let pos = (y * width + x);
+                let yuv_pos = pos * 3 ;
+                let canvas_pos = pos * 4;
+
+                let cy = yuv444[yuv_pos];
+                let cu = yuv444[yuv_pos + 1];
+                let cv = yuv444[yuv_pos + 2];
+                
+                let value = 0;
+                if (yMin <= cy && cy <= yMax && uMin <= cu && cu <= uMax && vMin <= cv && cv <= vMax) {
+                    value = 255;
+                }
+                data[canvas_pos] = value;
+                data[canvas_pos + 1] = value;
+                data[canvas_pos + 2] = value;
+                data[canvas_pos + 3] = 255;
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+    }
+
     function yuv2rgb_jpeg(y, u, v) {
         y = y;
         u = u - 128;
@@ -469,6 +710,7 @@
         reader.onload = function (e) {
             width = parseInt(document.getElementById('width').value);
             height = parseInt(document.getElementById('height').value);
+            format = document.getElementById('format').value;
 
             raw = new Uint8Array(e.target.result);
 
@@ -480,14 +722,20 @@
     function process() {
         let blurSelect = document.getElementById('blur');
 
-        if (blurSelect.value == 'gaussian_3x3') {
-            yuv = gaussian_3x3_yuv(raw, width, height);
+        if (format == 'yuv422') {
+            yuv444 = yuv422to444(raw);
         } else {
-            yuv = copyData(raw);
+            yuv444 = copyData(raw);
         }
 
-        drawYUV();
-        drawThreshold();
+        if (blurSelect.value == 'gaussian_3x3') {
+            yuvBlurred = gaussian_3x3_yuv444(yuv444, width, height);
+        } else {
+            yuvBlurred = copyData(yuv444);
+        }
+
+        drawYUV444();
+        drawThreshold444();
         drawResults();
     }
 
@@ -552,7 +800,7 @@
         }
         ctx2.putImageData(imageData2, 0, 0);
 
-        let results = find_blobs_yuv422(yuv, width, height, [yMin, yMax, uMin, uMax, vMin, vMax], pixel_threshold);
+        let results = find_blobs_yuv444(yuv444, width, height, [yMin, yMax, uMin, uMax, vMin, vMax], pixel_threshold);
         resultsDiv.innerHTML = '';
         ctx2.beginPath();
         for (let row of results) {
@@ -582,7 +830,7 @@
         drawYUVPlane('yuv_min_plane', yMin, uMin, uMax, vMin, vMax);
         drawYUVPlane('yuv_max_plane', yMax, uMin, uMax, vMin, vMax);
 
-        drawThreshold();
+        drawThreshold444();
         drawResults();
     }
 
@@ -616,17 +864,43 @@
         return colors;
     }
 
+    function getColor444(event) {
+        let canvas = document.getElementById('image');
+        let width = parseInt(document.getElementById('width').value);
+
+        let ctx = canvas.getContext("2d");
+        const bounding = canvas.getBoundingClientRect();
+        let x = Math.floor(event.clientX - bounding.left);
+        let y = Math.floor(event.clientY - bounding.top);
+
+        x = Math.round(x / canvas.clientWidth * canvas.width);
+        y = Math.round(y / canvas.clientHeight * canvas.height);
+        console.log(x, y);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        let colors = [[], []]
+        let pos = (y * width + x) * 4;
+        colors[0] = [data[pos+0], data[pos+1], data[pos+2]];
+        pos = (y * width + x) * 3;
+
+        colors[1] = [yuv444[pos], yuv444[pos+1], yuv444[pos+2]];
+
+        return colors;
+    }
+
     function pickColor(event) {
         let selected_rgb = document.getElementById('selected_rgb');
         let selected_yuv = document.getElementById('selected_yuv');
         let selected_rgb_color = document.getElementById('selected_rgb_color');
         let selected_yuv_color = document.getElementById('selected_yuv_color');
 
-        if (! yuv) {
+        if (! yuv444) {
             return;
         }
 
-        colors = getColor(event);
+        colors = getColor444(event);
 
         selected_rgb.innerText = colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2];
         selected_yuv.innerText = colors[1][0] + ', ' + colors[1][1] + ', ' + colors[1][2];
@@ -640,11 +914,11 @@
         let live_rgb_color = document.getElementById('live_rgb_color');
         let live_yuv_color = document.getElementById('live_yuv_color');
 
-        if (! yuv) {
+        if (! yuv444) {
             return;
         }
 
-        colors = getColor(event);
+        colors = getColor444(event);
 
         live_rgb.innerText = colors[0][0] + ', ' + colors[0][1] + ', ' + colors[0][2];
         live_yuv.innerText = colors[1][0] + ', ' + colors[1][1] + ', ' + colors[1][2];
