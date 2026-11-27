@@ -72,6 +72,7 @@
     <select id="format">
         <option value="yuv422">YUV422</option>
         <option value="yuv444">YUV444</option>
+        <option value="rgb888">RGB888</option>
     </select>
     <input id="file" type="file">
     <br><br>
@@ -133,6 +134,24 @@
             outBuf.push(buf[i+2]);
             outBuf.push(buf[i+1]);
             outBuf.push(buf[i+3]);
+        }
+        return outBuf;
+    }
+
+    function rgb2yuv888(buf) {
+        let outBuf = [];
+        for (let i=0; i<buf.length; i+=3) {
+            let r = buf[i];
+            let g = buf[i+1];
+            let b = buf[i+2];
+
+            let y = r *  .299000 + g *  .587000 + b *  .114000;
+            let u = r * -.168736 + g * -.331264 + b *  .500000 + 128;
+            let v = r *  .500000 + g * -.418688 + b * -.081312 + 128
+
+            outBuf.push(Math.round(y));
+            outBuf.push(Math.round(u));
+            outBuf.push(Math.round(v));
         }
         return outBuf;
     }
@@ -724,6 +743,8 @@
 
         if (format == 'yuv422') {
             yuv444 = yuv422to444(raw);
+        } else if (format == 'rgb888') {
+            yuv444 = rgb2yuv888(raw);
         } else {
             yuv444 = copyData(raw);
         }
